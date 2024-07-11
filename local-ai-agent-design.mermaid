@@ -1,0 +1,12 @@
+graph TD
+    A[User Interface] --> B[Agent Core]
+    B --> C[LLM Interface]
+    B --> D[Code Management]
+    B --> E[Context Management]
+    D --> F[Git Integration]
+    E --> G[Chat History]
+    E --> H[Code State Tracker]
+    C --> I[API Clients]
+    I --> J[Claude API]
+    I --> K[ChatGPT API]
+    F --> L[Local Git Repo]
