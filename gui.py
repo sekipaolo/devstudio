@@ -1,94 +1,107 @@
+import sys
 import os
-import git
-import openai
-from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
+from dotenv import load_dotenv
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QLineEdit, QLabel, QFileDialog, QComboBox
+from PyQt6.QtCore import Qt
 
-class LocalAIAgent:
-    def __init__(self, project_path):
-        self.project_path = project_path
-        self.init_git_repo()
-        self.chat_history = []
-        self.openai_client = openai.OpenAI()
-        self.anthropic_client = Anthropic()
-        
-    def init_git_repo(self):
-        try:
-            self.repo = git.Repo(self.project_path)
-        except git.exc.InvalidGitRepositoryError:
-            self.repo = git.Repo.init(self.project_path)
-            self.repo.git.add(A=True)
-            self.repo.index.commit("Initial commit")
-        
-    def get_file_content(self, file_path):
-        full_path = os.path.join(self.project_path, file_path)
-        if os.path.exists(full_path):
-            with open(full_path, 'r') as file:
-                return file.read()
-        return ""
-        
-    def update_file(self, file_path, content):
-        full_path = os.path.join(self.project_path, file_path)
-        os.makedirs(os.path.dirname(full_path), exist_ok=True)
-        with open(full_path, 'w') as file:
-            file.write(content)
-        
-    def commit_changes(self, message):
-        self.repo.git.add(A=True)
-        self.repo.index.commit(message)
-        
-    def get_context(self):
-        context = "Current project state:\n"
-        for file in self.repo.git.ls_files().split('\n'):
-            if file:  # Check if file is not an empty string
-                context += f"File: {file}\nContent:\n{self.get_file_content(file)}\n\n"
-        return context
-    
-    def call_llm(self, prompt, use_claude=False):
-        if use_claude:
-            response = self.anthropic_client.completions.create(
-                model="claude-2.1",
-                prompt=f"{HUMAN_PROMPT} {prompt} {AI_PROMPT}",
-                max_tokens_to_sample=1000,
-            )
-            return response.completion
-        else:
-            response = self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}]
-            )
-            return response.choices[0].message.content
-    
-    def process_request(self, user_input):
-        context = self.get_context()
-        prompt = f"Context:\n{context}\n\nUser request: {user_input}\n\nPlease provide a complete solution, including full code snippets and file paths where they should be placed."
-        
-        response = self.call_llm(prompt)
-        self.chat_history.append({"user": user_input, "ai": response})
-        
-        # Here you would parse the response and update files accordingly
-        # For simplicity, let's assume the response includes file paths and content
-        # You'd need to implement proper parsing based on the actual response format
-        
-        # Example (you'd need to adapt this based on actual response format):
-        # updated_files = parse_response(response)
-        # for file_path, content in updated_files.items():
-        #     self.update_file(file_path, content)
-        
-        self.commit_changes(f"AI update based on: {user_input}")
-        
-        return response
+# Import your LocalAIAgent class from the renamed file
+from agent import LocalAIAgent
+
+class AIAgentGUI(QMainWindow):
+    def __init__(self, agent):
+        super().__init__()
+        self.agent = agent
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle('AI Developer Assistant')
+        self.setGeometry(100, 100, 800, 600)
+
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+        layout = QVBoxLayout()
+        central_widget.setLayout(layout)
+
+        # Project selection
+        project_layout = QHBoxLayout()
+        self.project_path = QLineEdit(self.agent.project_path)
+        project_layout.addWidget(QLabel('Project Path:'))
+        project_layout.addWidget(self.project_path)
+        browse_button = QPushButton('Browse')
+        browse_button.clicked.connect(self.browse_project)
+        project_layout.addWidget(browse_button)
+        layout.addLayout(project_layout)
+
+        # LLM selection
+        llm_layout = QHBoxLayout()
+        llm_layout.addWidget(QLabel('Select LLM:'))
+        self.llm_dropdown = QComboBox()
+        self.llm_dropdown.addItems(['Claude', 'ChatGPT'])
+        self.llm_dropdown.setCurrentText('Claude')  # Set Claude as default
+        llm_layout.addWidget(self.llm_dropdown)
+        layout.addLayout(llm_layout)
+
+        # Chat history
+        self.chat_history = QTextEdit()
+        self.chat_history.setReadOnly(True)
+        layout.addWidget(self.chat_history)
+
+        # User input
+        input_layout = QHBoxLayout()
+        self.user_input = QLineEdit()
+        input_layout.addWidget(self.user_input)
+        send_button = QPushButton('Send')
+        send_button.clicked.connect(self.send_request)
+        input_layout.addWidget(send_button)
+        layout.addLayout(input_layout)
+
+        # Status bar
+        self.statusBar().showMessage('Ready')
+
+    def browse_project(self):
+        dialog = QFileDialog()
+        folder_path = dialog.getExistingDirectory(None, "Select Folder")
+        if folder_path:  # Only update if a folder was selected
+            self.project_path.setText(folder_path)
+            self.agent.set_project_path(folder_path)
+            self.statusBar().showMessage(f'Project set to: {folder_path}')
+
+    def send_request(self):
+        user_input = self.user_input.text()
+        self.chat_history.append(f"You: {user_input}")
+        self.user_input.clear()
+
+        # Get the selected LLM
+        selected_llm = self.llm_dropdown.currentText()
+        use_claude = (selected_llm == 'Claude')        
+        response = self.agent.process_request(user_input, use_claude)
+        self.chat_history.append(f"AI ({selected_llm}): {response}")
+        self.statusBar().showMessage('Request processed')
+
+def run_gui():
+    # Load environment variables
+    load_dotenv()
+
+    # Get API keys from environment variables
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+    anthropic_api_key = os.getenv('ANTHROPIC_API_KEY')
+
+    if not openai_api_key or not anthropic_api_key:
+        print("Error: API keys not found in .env file")
+        sys.exit(1)
+
+    # Get the directory where the script is run
+    current_dir = os.getcwd()
+
+    # Create the agent with API keys and current directory as default project path
+    agent = LocalAIAgent(current_dir, openai_api_key, anthropic_api_key)
+
+    app = QApplication(sys.argv)
+    ex = AIAgentGUI(agent)
+    ex.show()
+    sys.exit(app.exec())
 
 # Usage
-if __name__ == "__main__":
-    agent = LocalAIAgent("/home/sekipaolo/apps/agi/devstudio")
-    while True:
-        user_input = input("Enter your request (or 'quit' to exit): ")
-        if user_input.lower() == 'quit':
-            break
-        response = agent.process_request(user_input)
-        print(response)
-
-    # Save chat history
-    with open('chat_history.txt', 'w') as f:
-        for entry in agent.chat_history:
-            f.write(f"User: {entry['user']}\nAI: {entry['ai']}\n\n")
+if __name__ == '__main__':
+    run_gui()
