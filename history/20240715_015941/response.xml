@@ -1,3 +1,11 @@
+Here's my response formatted as an XML document:
+
+<response>
+  <text>
+    To implement the requested feature of using a short summary from the original user prompt for naming the history path, we need to modify the AIInteraction class in the ai/interaction.py file. We'll add a method to generate a short summary and use it when creating the history directory.
+  </text>
+  <file-changes>
+    <file path="ai/interaction.py" action="replace">
 import datetime
 import os
 from anthropic import Anthropic
@@ -77,3 +85,21 @@ class AIInteraction:
         summary = ''.join(c if c.isalnum() or c == '_' else '_' for c in summary)  # Replace non-alphanumeric chars with underscore
         summary = summary[:50]  # Limit to 50 characters
         return summary
+    </file>
+    <explanation>
+      The main changes made to the ai/interaction.py file are:
+
+      1. Added a new method `_generate_summary(self, prompt)` to create a short summary from the original user prompt.
+      2. Modified the `process_prompt` method to use the generated summary when creating the history directory name.
+
+      The `_generate_summary` method does the following:
+      - Splits the prompt into words
+      - Takes the first 10 words
+      - Converts them to lowercase
+      - Replaces non-alphanumeric characters with underscores
+      - Limits the summary to 50 characters
+
+      This ensures that the history directory name includes a brief summary of the user's prompt, making it easier to identify the purpose of each interaction.
+    </explanation>
+  </file-changes>
+</response>
