@@ -1,0 +1,174 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example. Remember to escape XML tags characters (&lt; and &gt;) characters:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        Here the full runnable content of the file
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        Here the full content of the newly created file
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="ai/interaction.py"&gt;
+import datetime
+import os
+from anthropic import Anthropic
+from dotenv import load_dotenv
+from .response_processor import ResponseProcessor
+from .prompt_processor import PromptProcessor
+
+load_dotenv()
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+class AIInteraction:
+    def __init__(self, project_root):
+        self.anthropic = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        self.project_root = project_root
+        self.selected_files = None
+        self.prompt_processor = PromptProcessor(project_root)
+        logger.debug(f"AIInteraction initialized with project root: {project_root}")
+
+    def process_prompt(self, prompt, selected_files):
+        logger.debug("Processing prompt")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.history_dir = os.path.join('history', timestamp)
+        self.artifacts_dir = os.path.join(self.history_dir, 'artifacts')
+        os.makedirs(self.history_dir, exist_ok=True)
+        os.makedirs(self.artifacts_dir, exist_ok=True)
+        logger.debug(f"Created history directory: {self.history_dir}")
+
+        formatted_prompt = self._prepare_prompt(prompt, selected_files)
+        self._save_prompt(formatted_prompt)
+
+        logger.debug("Sending request to Anthropic API")
+        raw_response = self._send_request_to_anthropic(formatted_prompt)
+        logger.debug("Received response from Anthropic API")
+
+        response = raw_response.content[0].text
+        self._save_response(response)
+
+        processor = ResponseProcessor(self.project_root, self.artifacts_dir)
+        processor.process_response(response)
+        logger.debug("Processed response")
+            
+        logger.info("Response processed. Please check the 'history' directory for the saved chat and artifacts.")
+        return response, processor
+
+    def _prepare_prompt(self, prompt, selected_files):
+        return self.prompt_processor.prepare_prompt(prompt, selected_files)
+
+    def _save_prompt(self, formatted_prompt):
+        with open(os.path.join(self.history_dir, 'prompt.xml'), 'w') as f:
+            f.write(formatted_prompt)
+        logger.debug("Saved prompt to history")
+
+    def _send_request_to_anthropic(self, formatted_prompt):
+        return self.anthropic.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=4096,
+            messages=[
+                {"role": "user", "content": formatted_prompt}
+            ]
+        )
+
+    def _save_response(self, response):
+        with open(os.path.join(self.history_dir, 'response.xml'), 'w') as f:
+            f.write(response)
+        logger.debug("Saved response to history")
+
+&lt;/Source&gt;
+&lt;Source path="ai/response_processor.py"&gt;
+import os
+import re
+import logging
+from .xml_parser import XMLParser
+
+class ResponseProcessor:
+    def __init__(self, project_root, artifacts_dir):
+        self.project_root = project_root
+        self.artifacts_dir = project_root
+        self.response = {}
+        logging.basicConfig(level=logging.DEBUG)
+        self.logger = logging.getLogger(__name__)
+        self.xml_parser = XMLParser()
+        self.logger.debug(f"ResponseProcessor initialized with project root: {project_root} and artifacts dir: {artifacts_dir}")
+
+    def process_response(self, response):
+        self.logger.debug("Processing response")
+        self.response = {"text": [], "files": []}
+        # Extract XML content
+        xml_match = re.search(r'&lt;response&gt;.*&lt;/response&gt;', response, re.DOTALL)
+        if xml_match:
+            xml_content = xml_match.group(0)
+            # Extract free text before and after XML
+            self.response['text'] += re.split(r'&lt;response&gt;.*&lt;/response&gt;', response, flags=re.DOTALL)
+            self.logger.debug("XML content extracted successfully")
+        else:
+            self.logger.error("No XML content found in the response")
+            return
+
+        parsed_xml = self.xml_parser.parse_xml(xml_content)
+        if parsed_xml is None:
+            self.logger.error("Failed to parse XML content")
+            return
+
+        self.response['text'] += self.xml_parser.extract_text(parsed_xml)
+        file_changes = self.xml_parser.extract_file_changes(parsed_xml)
+        self.logger.debug(f"Extracted {len(file_changes)} file changes")
+
+        for file_change in file_changes:
+            for file_info in file_change['files']:
+                processed_file = self.process_file(file_info)
+                processed_file['explanations'] = file_change['explanations']
+                self.response['files'].append(processed_file)
+
+        self.logger.debug("Response processing completed")
+
+    def process_file(self, file_info):
+        file_path = file_info['path']
+        action = file_info['action']
+        original_path = os.path.join(self.project_root, file_path)
+        tmp_path = os.path.join(self.artifacts_dir, file_path)
+
+        self.logger.debug(f"Processing file: {file_path} with action: {action}")
+        if action == 'delete':
+            if os.path.exists(original_path):
+                self.logger.info(f"Marked file for deletion: {file_path}")
+                with open(os.path.join(self.artifacts_dir, 'deletions.txt'), 'w') as f:
+                    f.write(file_path + "\n")
+            else:
+                self.logger.warning(f"Attempted to delete non-existent file: {file_path}")
+            return file_info
+
+        new_content = file_info['content'] + '\n' if file_info['content'] else ''
+        file_info['content'] = new_content
+
+        os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
+        with open(tmp_path, 'w') as f:
+            f.write(new_content)
+        self.logger.debug(f"Wrote content to temporary file: {tmp_path}")
+
+        if action == 'create' or not os.path.exists(original_path):
+            self.logger.info(f"Created new file: {file_path}")
+        else:
+            with open(original_path, 'r') as f:
+                original_content = f.read()
+            
+            if original_content.strip() != new_content.strip():
+                self.logger.info(f"Updated file: {file_path}")
+            else:
+                self.logger.info(f"No changes in file: {file_path}")
+
+        return file_info
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;After changes are applied a new git commit should be created in the project root included with all the applied chages and all files generated in the history_dir folder&lt;/Task&gt;
+

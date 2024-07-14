@@ -1,0 +1,125 @@
+<Guidelines>
+            Format your answer as an XML document as this example. Remember to escape XML tags characters (< and >) characters:
+           <response>
+               <text>Any text not related to file changes</text>
+               <file-changes>
+                   <file path="gui/widgets.py" action="replace">
+                        Here the full runnable content of the file
+                   </file>
+                   <file path="gui/new_file.py" action="create">
+                        Here the full content of the newly created file
+                   </file>
+                   <file path="gui/deleted_file.py" action="delete"/>
+                   <explanation>
+                        Here the explanation of the changes
+                   </explanation>                    
+               </file-changes>
+           </response>
+        </Guidelines><Sources><Source path="ai/interaction.py">
+import datetime
+import json
+import mimetypes
+import shutil
+from anthropic import Anthropic
+from dotenv import load_dotenv
+import os
+from .response_processor import ResponseProcessor
+
+
+load_dotenv()
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+class AIInteraction:
+    def __init__(self, project_root):
+        self.anthropic = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        self.project_root = project_root
+        self.selected_files = None
+        logger.debug(f"AIInteraction initialized with project root: {project_root}")
+
+    def prepare_prompt(self, prompt, selected_files):
+        logger.debug("Preparing prompt")
+        guidelines_text = """
+            Format your answer as an XML document as this example. Remember to escape XML tags characters (< and >) characters:
+           <response>
+               <text>Any text not related to file changes</text>
+               <file-changes>
+                   <file path="gui/widgets.py" action="replace">
+                        Here the full runnable content of the file
+                   </file>
+                   <file path="gui/new_file.py" action="create">
+                        Here the full content of the newly created file
+                   </file>
+                   <file path="gui/deleted_file.py" action="delete"/>
+                   <explanation>
+                        Here the explanation of the changes
+                   </explanation>                    
+               </file-changes>
+           </response>
+        """
+
+        sources_text = ""
+        for file in selected_files:
+            relative_path = os.path.relpath(file['path'], start=self.project_root)
+            file_type, _ = mimetypes.guess_type(file['path'])
+            if file_type is None:
+                file_type = "application/octet-stream"
+            
+            sources_text += (
+                f"<Source path=\"{relative_path}\">\n"
+                f"{file['content']}\n"
+                "</Source>\n"
+            )
+            logger.debug(f"Added source file: {relative_path}")
+
+        formatted_prompt = (
+            f"<Guidelines>{guidelines_text}</Guidelines>"
+            f"<Sources>{sources_text}</Sources>"        
+            f"<Task>{prompt}</Task>\n\n" 
+        )    
+        logger.debug("Prompt prepared successfully")
+        return formatted_prompt    
+    
+    def process_prompt(self, prompt, selected_files):
+        logger.debug("Processing prompt")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.history_dir = os.path.join('history', timestamp)
+        self.artifacts_dir = os.path.join(self.history_dir, 'artifacts')
+        os.makedirs(self.history_dir, exist_ok=True)
+        os.makedirs(self.artifacts_dir, exist_ok=True)
+        logger.debug(f"Created history directory: {self.history_dir}")
+
+        formatted_prompt = self.prepare_prompt(prompt, selected_files)
+        # Save prompt
+        with open(os.path.join(self.history_dir, 'prompt.xml'), 'w') as f:
+            f.write(formatted_prompt)
+        logger.debug("Saved prompt to history")
+
+        logger.debug("Sending request to Anthropic API")
+        raw_response = self.anthropic.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=4096,
+            messages=[
+                {"role": "user", "content": formatted_prompt}
+            ]
+        )
+        logger.debug("Received response from Anthropic API")
+
+        response = raw_response.content[0].text
+        # Save response
+        with open(os.path.join(self.history_dir, 'response.xml'), 'w') as f:
+            f.write(response)
+        logger.debug("Saved response to history")
+
+        processor = ResponseProcessor(self.project_root, self.artifacts_dir)
+        processor.process_response(response)
+        logger.debug("Processed response")
+            
+        logger.info("Response processed. Please check the 'history' directory for the saved chat and artifacts.")
+        return response, processor
+
+</Source>
+</Sources><Task>estract the promp processing in a separate module</Task>
+

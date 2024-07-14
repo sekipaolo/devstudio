@@ -1,0 +1,136 @@
+<response>
+    <text>Certainly! I'll extract the prompt processing functionality into a separate module. This will improve code organization and make it easier to maintain and extend the prompt processing logic in the future.</text>
+    <file-changes>
+        <file path="ai/interaction.py" action="replace">
+import datetime
+import os
+from anthropic import Anthropic
+from dotenv import load_dotenv
+from .response_processor import ResponseProcessor
+from .prompt_processor import PromptProcessor
+
+load_dotenv()
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+class AIInteraction:
+    def __init__(self, project_root):
+        self.anthropic = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        self.project_root = project_root
+        self.selected_files = None
+        self.prompt_processor = PromptProcessor(project_root)
+        logger.debug(f"AIInteraction initialized with project root: {project_root}")
+
+    def process_prompt(self, prompt, selected_files):
+        logger.debug("Processing prompt")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.history_dir = os.path.join('history', timestamp)
+        self.artifacts_dir = os.path.join(self.history_dir, 'artifacts')
+        os.makedirs(self.history_dir, exist_ok=True)
+        os.makedirs(self.artifacts_dir, exist_ok=True)
+        logger.debug(f"Created history directory: {self.history_dir}")
+
+        formatted_prompt = self.prompt_processor.prepare_prompt(prompt, selected_files)
+        # Save prompt
+        with open(os.path.join(self.history_dir, 'prompt.xml'), 'w') as f:
+            f.write(formatted_prompt)
+        logger.debug("Saved prompt to history")
+
+        logger.debug("Sending request to Anthropic API")
+        raw_response = self.anthropic.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=4096,
+            messages=[
+                {"role": "user", "content": formatted_prompt}
+            ]
+        )
+        logger.debug("Received response from Anthropic API")
+
+        response = raw_response.content[0].text
+        # Save response
+        with open(os.path.join(self.history_dir, 'response.xml'), 'w') as f:
+            f.write(response)
+        logger.debug("Saved response to history")
+
+        processor = ResponseProcessor(self.project_root, self.artifacts_dir)
+        processor.process_response(response)
+        logger.debug("Processed response")
+            
+        logger.info("Response processed. Please check the 'history' directory for the saved chat and artifacts.")
+        return response, processor
+</file>
+        <file path="ai/prompt_processor.py" action="create">
+import os
+import mimetypes
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+class PromptProcessor:
+    def __init__(self, project_root):
+        self.project_root = project_root
+
+    def prepare_prompt(self, prompt, selected_files):
+        logger.debug("Preparing prompt")
+        guidelines_text = """
+            Format your answer as an XML document as this example. Remember to escape XML tags characters (< and >) characters:
+           <response>
+               <text>Any text not related to file changes</text>
+               <file-changes>
+                   <file path="gui/widgets.py" action="replace">
+                        Here the full runnable content of the file
+                   </file>
+                   <file path="gui/new_file.py" action="create">
+                        Here the full content of the newly created file
+                   </file>
+                   <file path="gui/deleted_file.py" action="delete"/>
+                   <explanation>
+                        Here the explanation of the changes
+                   </explanation>                    
+               </file-changes>
+           </response>
+        """
+
+        sources_text = ""
+        for file in selected_files:
+            relative_path = os.path.relpath(file['path'], start=self.project_root)
+            file_type, _ = mimetypes.guess_type(file['path'])
+            if file_type is None:
+                file_type = "application/octet-stream"
+            
+            sources_text += (
+                f"<Source path=\"{relative_path}\">\n"
+                f"{file['content']}\n"
+                "</Source>\n"
+            )
+            logger.debug(f"Added source file: {relative_path}")
+
+        formatted_prompt = (
+            f"<Guidelines>{guidelines_text}</Guidelines>"
+            f"<Sources>{sources_text}</Sources>"        
+            f"<Task>{prompt}</Task>\n\n" 
+        )    
+        logger.debug("Prompt prepared successfully")
+        return formatted_prompt
+</file>
+        <explanation>
+I've extracted the prompt processing functionality into a new module called `prompt_processor.py`. Here's a breakdown of the changes:
+
+1. Created a new file `ai/prompt_processor.py`:
+   - This file contains the new `PromptProcessor` class, which encapsulates the logic for preparing the prompt.
+   - The `prepare_prompt` method from the original `AIInteraction` class has been moved here.
+   - The class is initialized with the `project_root` parameter, which is used for generating relative file paths.
+
+2. Modified `ai/interaction.py`:
+   - Imported the new `PromptProcessor` class.
+   - Removed the `prepare_prompt` method, as it's now in the `PromptProcessor` class.
+   - Added a `prompt_processor` attribute to the `AIInteraction` class, initialized in the constructor.
+   - Updated the `process_prompt` method to use the `prompt_processor` for preparing the prompt.
+
+These changes improve the code organization by separating concerns. The `AIInteraction` class now focuses on managing the interaction with the AI service and handling the response, while the `PromptProcessor` class is responsible for preparing the prompt. This separation makes the code more modular and easier to maintain.
+        </explanation>
+    </file-changes>
+</response>

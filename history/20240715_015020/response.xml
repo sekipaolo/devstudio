@@ -1,0 +1,118 @@
+<response>
+  <text>
+To implement the requested feature of creating a new git commit after changes are applied, including all the applied changes and files generated in the history_dir folder, we need to modify the AIInteraction class. We'll add a new method to create the git commit and call it after processing the response. Here's how we can modify the ai/interaction.py file to achieve this:
+  </text>
+  <file-changes>
+    <file path="ai/interaction.py" action="replace">
+import datetime
+import os
+import subprocess
+from anthropic import Anthropic
+from dotenv import load_dotenv
+from .response_processor import ResponseProcessor
+from .prompt_processor import PromptProcessor
+
+load_dotenv()
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+class AIInteraction:
+    def __init__(self, project_root):
+        self.anthropic = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        self.project_root = project_root
+        self.selected_files = None
+        self.prompt_processor = PromptProcessor(project_root)
+        logger.debug(f"AIInteraction initialized with project root: {project_root}")
+
+    def process_prompt(self, prompt, selected_files):
+        logger.debug("Processing prompt")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.history_dir = os.path.join('history', timestamp)
+        self.artifacts_dir = os.path.join(self.history_dir, 'artifacts')
+        os.makedirs(self.history_dir, exist_ok=True)
+        os.makedirs(self.artifacts_dir, exist_ok=True)
+        logger.debug(f"Created history directory: {self.history_dir}")
+
+        formatted_prompt = self._prepare_prompt(prompt, selected_files)
+        self._save_prompt(formatted_prompt)
+
+        logger.debug("Sending request to Anthropic API")
+        raw_response = self._send_request_to_anthropic(formatted_prompt)
+        logger.debug("Received response from Anthropic API")
+
+        response = raw_response.content[0].text
+        self._save_response(response)
+
+        processor = ResponseProcessor(self.project_root, self.artifacts_dir)
+        processor.process_response(response)
+        logger.debug("Processed response")
+            
+        self._create_git_commit()
+        logger.info("Response processed and git commit created. Please check the 'history' directory for the saved chat and artifacts.")
+        return response, processor
+
+    def _prepare_prompt(self, prompt, selected_files):
+        return self.prompt_processor.prepare_prompt(prompt, selected_files)
+
+    def _save_prompt(self, formatted_prompt):
+        with open(os.path.join(self.history_dir, 'prompt.xml'), 'w') as f:
+            f.write(formatted_prompt)
+        logger.debug("Saved prompt to history")
+
+    def _send_request_to_anthropic(self, formatted_prompt):
+        return self.anthropic.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=4096,
+            messages=[
+                {"role": "user", "content": formatted_prompt}
+            ]
+        )
+
+    def _save_response(self, response):
+        with open(os.path.join(self.history_dir, 'response.xml'), 'w') as f:
+            f.write(response)
+        logger.debug("Saved response to history")
+
+    def _create_git_commit(self):
+        try:
+            # Change to the project root directory
+            os.chdir(self.project_root)
+
+            # Add all changes in the project root
+            subprocess.run(["git", "add", "."], check=True)
+
+            # Add all files in the history directory
+            subprocess.run(["git", "add", self.history_dir], check=True)
+
+            # Create a commit with a descriptive message
+            commit_message = f"AI-assisted changes - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            subprocess.run(["git", "commit", "-m", commit_message], check=True)
+
+            logger.info(f"Created git commit: {commit_message}")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Error creating git commit: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error during git commit: {e}")
+        finally:
+            # Change back to the original directory
+            os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    </file>
+    <explanation>
+    The changes made to the ai/interaction.py file include:
+
+    1. Added a new import for subprocess to run git commands.
+    2. Created a new method _create_git_commit() that:
+       - Changes to the project root directory
+       - Adds all changes in the project root using 'git add .'
+       - Adds all files in the history directory using 'git add &lt;history_dir&gt;'
+       - Creates a commit with a descriptive message including the current timestamp
+       - Handles potential errors and logs them
+       - Changes back to the original directory after the operation
+    3. Modified the process_prompt() method to call _create_git_commit() after processing the response.
+
+    These changes ensure that after the AI-assisted changes are applied, a new git commit is created including all the applied changes and files generated in the history_dir folder.
+    </explanation>
+  </file-changes>
+</response>
