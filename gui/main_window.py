@@ -2,7 +2,7 @@ import os
 import logging
 from typing import List, Dict, Optional
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-         QSplitter, QInputDialog, QLabel, QTextEdit, QPushButton, QListWidget, QListWidgetItem, QMessageBox, QCheckBox)
+         QSplitter, QInputDialog, QLabel, QTextEdit, QPushButton, QListWidget, QListWidgetItem, QMessageBox, QCheckBox, QFileDialog)
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QIcon
 from .file_tree import FileTreeView, FileTreeItem
@@ -61,6 +61,11 @@ class AIAssistantGUI(QMainWindow):
         self.logging_checkbox.setChecked(True)
         self.logging_checkbox.stateChanged.connect(self.toggle_logging)
         layout.addWidget(self.logging_checkbox)
+
+        # Add button to change project root
+        self.change_root_button = QPushButton("Change Project Root")
+        self.change_root_button.clicked.connect(self.change_project_root)
+        layout.addWidget(self.change_root_button)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         layout.addWidget(splitter)
@@ -138,6 +143,18 @@ class AIAssistantGUI(QMainWindow):
         splitter.addWidget(right_panel)
 
         self.populate_file_tree()
+
+    def change_project_root(self):
+        new_root = QFileDialog.getExistingDirectory(self, "Select Project Root Directory")
+        if new_root:
+            try:
+                self.logic.change_project_folder(new_root)
+                self.populate_file_tree()
+                self.log('info', f"Project root changed to: {new_root}")
+                QMessageBox.information(self, "Project Root Changed", f"Project root has been changed to:\n{new_root}")
+            except Exception as e:
+                self.log('error', f"Error changing project root: {str(e)}")
+                QMessageBox.critical(self, "Error", f"Failed to change project root: {str(e)}")
 
     def populate_file_tree(self):
         self.log('debug', "Populating file tree")

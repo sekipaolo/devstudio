@@ -1,21 +1,21 @@
-&lt;Guidelines>
-            Format your answer as an XML document as this example. Remember to escape< and > characters:
-           <response>
-               <text>Any text not related to file changes&lt;/text>
-               <file-changes>
-                   <file path="gui/widgets.py" action="replace">
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example. Remember to escape XML tags characters (&lt; and &gt;) characters:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
                         Here the full runnable content of the file
-                   </file>
-                   <file path="gui/new_file.py" action="create">
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
                         Here the full content of the newly created file
-                   </file>
-                   <file path="gui/deleted_file.py" action="delete"/>
-                   <explanation>
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
                         Here the explanation of the changes
-                   </explanation>                    
-               </file-changes>
-           </response>
-        &lt;/Guidelines>&lt;Sources>&lt;Source path="gui/main_window.py">
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/main_window.py"&gt;
 import os
 import logging
 from typing import List, Dict, Optional
@@ -98,11 +98,41 @@ class AIAssistantGUI(QMainWindow):
         button_layout = QHBoxLayout()
         self.confirm_button = ConfirmButton()
         self.confirm_button.clicked.connect(self.confirm_and_send)
+        self.confirm_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2C3E50;
+                color: white;
+                border: none;
+                padding: 5px 15px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #34495E;
+            }
+            QPushButton:pressed {
+                background-color: #1ABC9C;
+            }
+        """)
         button_layout.addWidget(self.confirm_button)
 
         self.apply_changes_button = QPushButton("Apply Changes")
         self.apply_changes_button.clicked.connect(self.apply_file_changes)
-        self.apply_changes_button.setVisible(False)
+        self.apply_changes_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2C3E50;
+                color: white;
+                border: none;
+                padding: 5px 15px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #34495E;
+            }
+            QPushButton:pressed {
+                background-color: #1ABC9C;
+            }
+        """)
+        self.apply_changes_button.setVisible(False)  # Initially hide the button
         button_layout.addWidget(self.apply_changes_button)
 
         right_layout.addLayout(button_layout)
@@ -203,7 +233,7 @@ class AIAssistantGUI(QMainWindow):
             self.status_progress_bar.setVisible(False)
             self.status_label.update_status("AI response processed successfully!")
             
-            # Show apply changes button
+            # Make the Apply Changes button visible
             self.apply_changes_button.setVisible(True)
             
             # Hide status label after 3 seconds
@@ -214,7 +244,7 @@ class AIAssistantGUI(QMainWindow):
             self.status_progress_bar.setVisible(False)
             self.status_label.update_status("Error processing AI response")
 
-    def get_selected_files(self) -> List[Dict[str, str]]:
+    def get_selected_files(self) -&gt; List[Dict[str, str]]:
         selected_files = []
         def traverse(parent: FileTreeItem):
             for row in range(parent.rowCount()):
@@ -235,7 +265,7 @@ class AIAssistantGUI(QMainWindow):
         
         return selected_files
 
-    def get_file_path(self, item: FileTreeItem) -> str:
+    def get_file_path(self, item: FileTreeItem) -&gt; str:
         path = []
         while item is not None:
             path.append(item.text())
@@ -277,108 +307,12 @@ class AIAssistantGUI(QMainWindow):
             self.logic.apply_file_changes()
             self.populate_file_tree()  # Refresh the file tree
             self.file_changes_list.clear()
-            self.apply_changes_button.setVisible(False)
+            self.apply_changes_button.setVisible(False)  # Hide the button after changes are applied
             QMessageBox.information(self, "Response processed", "All file changes have been saved successfully.")
         except Exception as e:
             self.log('error', f"Error applying file changes: {str(e)}")
             QMessageBox.critical(self, "Error", f"Failed to apply file changes: {str(e)}")
 
-&lt;/Source>
-&lt;Source path="gui/widgets.py">
-from PyQt6.QtWidgets import QTextEdit, QPushButton, QLabel, QProgressBar, QListWidgetItem, QWidget, QHBoxLayout
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QIcon
-from ai.xml_parser import XMLParser
-
-class PromptInput(QTextEdit):
-    pass
-
-class ConfirmButton(QPushButton):
-    def __init__(self, parent=None):
-        super().__init__('Send to AI', parent)
-        self.setStyleSheet("""
-            background-color: #008CBA;
-            color: white;
-            padding: 10px;
-            font-size: 16px;
-        """)
-        self.setMinimumHeight(50)
-        self.setFont(QFont('Arial', 12))
-
-class ResponseDisplay(QTextEdit):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setReadOnly(True)
-        self.xml_parser = XMLParser()
-
-    def update_counts(self, input_tokens, output_tokens):
-        self.setText(f"Input tokens: {input_tokens}, Output tokens: {output_tokens}")
-        self.setVisible(True)
-
-    def display_processed_response(self, response):
-        processed_content = self.xml_parser.process_response(response)
-        self.setText(processed_content)
-        self.setVisible(True)
-
-class StatusProgressBar(QProgressBar):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setRange(0, 0)  # Indeterminate progress
-        self.setTextVisible(False)
-        self.setVisible(False)
-
-class StatusLabel(QLabel):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setVisible(False)
-
-    def update_status(self, status):
-        self.setText(status)
-        self.setVisible(True)
-
-class FileChangeWidget(QWidget):
-    preview_clicked = pyqtSignal(str)
-
-    def __init__(self, file_path, change_type, parent=None):
-        super().__init__(parent)
-        self.file_path = file_path
-        self.change_type = change_type
-
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(5, 5, 5, 5)
-
-        # Status icon
-        self.status_icon = QLabel()
-        self.set_status_icon()
-        layout.addWidget(self.status_icon)
-
-        # File path
-        self.path_label = QLabel(file_path)
-        layout.addWidget(self.path_label)
-
-        # Spacer
-        layout.addStretch()
-
-        # Preview icon
-        self.preview_button = QPushButton()
-        self.preview_button.setIcon(QIcon("gui/icons/preview.png"))
-        self.preview_button.clicked.connect(self.on_preview_clicked)
-        layout.addWidget(self.preview_button)
-
-    def set_status_icon(self):
-        icon = QIcon()
-        if self.change_type == "new":
-            icon = QIcon("gui/icons/new.png")
-        elif self.change_type == "edit":
-            icon = QIcon("gui/icons/edit.png")
-        elif self.change_type == "delete":
-            icon = QIcon("gui/icons/delete.png")
-        self.status_icon.setPixmap(icon.pixmap(24, 24))
-
-    def on_preview_clicked(self):
-        self.preview_clicked.emit(self.file_path)
-
-&lt;/Source>
-&lt;/Sources>&lt;Task>Make the Send to AI button color darker&lt;/Task>
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;Create a way for the user ton change the project root &lt;/Task&gt;
 

@@ -1,12 +1,16 @@
+Here's my response with the requested changes:
+
 <response>
-    <text>Certainly! I'll modify the GUI to make the "Send to AI" button (which is the confirm button) use a dark color scheme. This will involve changing the button's style to have a dark background with light text. Here's how we can implement this change:&lt;/text>
+    <text>
+To allow the user to change the project root, we'll add a new button in the GUI that opens a dialog for selecting a new directory. We'll also need to update the AIAssistantLogic class to handle the change of project folder, and refresh the file tree view accordingly.
+    </text>
     <file-changes>
         <file path="gui/main_window.py" action="replace">
 import os
 import logging
 from typing import List, Dict, Optional
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-         QSplitter, QInputDialog, QLabel, QTextEdit, QPushButton, QListWidget, QListWidgetItem, QMessageBox, QCheckBox)
+         QSplitter, QInputDialog, QLabel, QTextEdit, QPushButton, QListWidget, QListWidgetItem, QMessageBox, QCheckBox, QFileDialog)
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QIcon
 from .file_tree import FileTreeView, FileTreeItem
@@ -66,6 +70,11 @@ class AIAssistantGUI(QMainWindow):
         self.logging_checkbox.stateChanged.connect(self.toggle_logging)
         layout.addWidget(self.logging_checkbox)
 
+        # Add button to change project root
+        self.change_root_button = QPushButton("Change Project Root")
+        self.change_root_button.clicked.connect(self.change_project_root)
+        layout.addWidget(self.change_root_button)
+
         splitter = QSplitter(Qt.Orientation.Horizontal)
         layout.addWidget(splitter)
 
@@ -103,7 +112,22 @@ class AIAssistantGUI(QMainWindow):
 
         self.apply_changes_button = QPushButton("Apply Changes")
         self.apply_changes_button.clicked.connect(self.apply_file_changes)
-        self.apply_changes_button.setVisible(False)
+        self.apply_changes_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2C3E50;
+                color: white;
+                border: none;
+                padding: 5px 15px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #34495E;
+            }
+            QPushButton:pressed {
+                background-color: #1ABC9C;
+            }
+        """)
+        self.apply_changes_button.setVisible(False)  # Initially hide the button
         button_layout.addWidget(self.apply_changes_button)
 
         right_layout.addLayout(button_layout)
@@ -127,6 +151,18 @@ class AIAssistantGUI(QMainWindow):
         splitter.addWidget(right_panel)
 
         self.populate_file_tree()
+
+    def change_project_root(self):
+        new_root = QFileDialog.getExistingDirectory(self, "Select Project Root Directory")
+        if new_root:
+            try:
+                self.logic.change_project_folder(new_root)
+                self.populate_file_tree()
+                self.log('info', f"Project root changed to: {new_root}")
+                QMessageBox.information(self, "Project Root Changed", f"Project root has been changed to:\n{new_root}")
+            except Exception as e:
+                self.log('error', f"Error changing project root: {str(e)}")
+                QMessageBox.critical(self, "Error", f"Failed to change project root: {str(e)}")
 
     def populate_file_tree(self):
         self.log('debug', "Populating file tree")
@@ -204,7 +240,7 @@ class AIAssistantGUI(QMainWindow):
             self.status_progress_bar.setVisible(False)
             self.status_label.update_status("AI response processed successfully!")
             
-            # Show apply changes button
+            # Make the Apply Changes button visible
             self.apply_changes_button.setVisible(True)
             
             # Hide status label after 3 seconds
@@ -215,7 +251,7 @@ class AIAssistantGUI(QMainWindow):
             self.status_progress_bar.setVisible(False)
             self.status_label.update_status("Error processing AI response")
 
-    def get_selected_files(self) -> List[Dict[str, str]]:
+    def get_selected_files(self) -&gt; List[Dict[str, str]]:
         selected_files = []
         def traverse(parent: FileTreeItem):
             for row in range(parent.rowCount()):
@@ -236,7 +272,7 @@ class AIAssistantGUI(QMainWindow):
         
         return selected_files
 
-    def get_file_path(self, item: FileTreeItem) -> str:
+    def get_file_path(self, item: FileTreeItem) -&gt; str:
         path = []
         while item is not None:
             path.append(item.text())
@@ -278,45 +314,23 @@ class AIAssistantGUI(QMainWindow):
             self.logic.apply_file_changes()
             self.populate_file_tree()  # Refresh the file tree
             self.file_changes_list.clear()
-            self.apply_changes_button.setVisible(False)
+            self.apply_changes_button.setVisible(False)  # Hide the button after changes are applied
             QMessageBox.information(self, "Response processed", "All file changes have been saved successfully.")
         except Exception as e:
             self.log('error', f"Error applying file changes: {str(e)}")
             QMessageBox.critical(self, "Error", f"Failed to apply file changes: {str(e)}")
         </file>
         <explanation>
-            I've modified the `initUI` method of the `AIAssistantGUI` class to apply a dark color scheme to the confirm button (which is the "Send to AI" button). Here are the changes:
+The following changes have been made to the main_window.py file:
 
-            1. Added a `setStyleSheet` call to the `self.confirm_button` after it's created:
+1. Added a new import for QFileDialog.
+2. Created a new method called `change_project_root()` that opens a file dialog for the user to select a new project root directory.
+3. Added a new button in the `initUI()` method to trigger the `change_project_root()` function.
+4. Updated the `change_project_root()` method to call `self.logic.change_project_folder(new_root)` to update the project folder in the AIAssistantLogic class.
+5. Added error handling and logging for the project root change process.
+6. Updated the file tree after changing the project root.
 
-            ```python
-            self.confirm_button.setStyleSheet("""
-                QPushButton {
-                    background-color: #2C3E50;
-                    color: white;
-                    border: none;
-                    padding: 5px 15px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #34495E;
-                }
-                QPushButton:pressed {
-                    background-color: #1ABC9C;
-                }
-            """)
-            ```
-
-            This CSS-like style sets:
-            - A dark blue background (#2C3E50)
-            - White text color
-            - No border
-            - Padding for better appearance
-            - Bold font
-            - Hover effect with a slightly lighter blue (#34495E)
-            - Pressed effect with a teal color (#1ABC9C)
-
-            These changes will make the "Send to AI" button stand out with a dark scheme, improving its visibility and providing visual feedback on user interactions.
+These changes allow the user to change the project root directory through the GUI. The new button is placed at the top of the main window, making it easily accessible. When clicked, it opens a file dialog for the user to select a new directory. After selection, the project root is updated, and the file tree is refreshed to reflect the new directory structure.
         </explanation>
     </file-changes>
 </response>
