@@ -1,6 +1,70 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example. Remember to escape XML tags characters (&lt; and &gt;) characters:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        Here the full runnable content of the file
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        Here the full content of the newly created file
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/ai_assistant_logic.py"&gt;
 import os
 import logging
-import subprocess
+from typing import List, Dict, Optional
+from ai import AIInteraction
+
+class AIAssistantLogic:
+    def __init__(self, project_folder: str):
+        self.project_folder: str = project_folder
+        self.ai_interaction: AIInteraction = AIInteraction(self.project_folder)
+        self.file_changes: Dict[str, str] = {}
+        
+        # Set up logging
+        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug("AIAssistantLogic initialized with project folder: %s", self.project_folder)
+
+    def process_prompt(self, prompt: str, selected_files: List[Dict[str, str]]):
+        self.logger.debug("Processing prompt: %s", prompt)
+        self.logger.debug("Selected files: %s", selected_files)
+        result = self.ai_interaction.process_prompt(prompt, selected_files)
+        return result
+
+
+    def apply_file_changes(self):
+        self.logger.debug("Applying file changes")
+        for file_path, change_type in self.file_changes.items():
+            self.logger.debug("Processing file: %s (change type: %s)", file_path, change_type)
+            if change_type == "create" or change_type == "update":
+                src_path = os.path.join(self.ai_interaction.artifacts_dir, file_path)
+                dst_path = os.path.join(self.project_folder, file_path)
+                self.logger.debug(f"{change_type}ing {dst_path}")
+                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+                with open(src_path, 'r') as src_file, open(dst_path, 'w') as dst_file:
+                    content = src_file.read()
+                    dst_file.write(content)
+                self.logger.debug("File created/updated successfully: %s", dst_path)
+            elif change_type == "delete":
+                file_to_delete = os.path.join(self.project_folder, file_path)
+                self.logger.debug("Deleting file: %s", file_to_delete)
+                os.remove(file_to_delete)
+                self.logger.debug("File deleted successfully: %s", file_to_delete)
+        
+        self.logger.debug("All file changes applied, clearing file_changes dictionary")
+        self.file_changes.clear()
+
+&lt;/Source&gt;
+&lt;Source path="gui/main_window.py"&gt;
+import os
+import logging
 from typing import List, Dict, Optional
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
          QSplitter, QInputDialog, QLabel, QTextEdit, QPushButton, QListWidget, QListWidgetItem, QMessageBox, QCheckBox, QFileDialog)
@@ -244,7 +308,7 @@ class AIAssistantGUI(QMainWindow):
             self.status_progress_bar.setVisible(False)
             self.status_label.update_status("Error processing AI response")
 
-    def get_selected_files(self) -> List[Dict[str, str]]:
+    def get_selected_files(self) -&gt; List[Dict[str, str]]:
         selected_files = []
         def traverse(parent: FileTreeItem):
             for row in range(parent.rowCount()):
@@ -265,7 +329,7 @@ class AIAssistantGUI(QMainWindow):
         
         return selected_files
 
-    def get_file_path(self, item: FileTreeItem) -> str:
+    def get_file_path(self, item: FileTreeItem) -&gt; str:
         path = []
         while item is not None:
             path.append(item.text())
@@ -309,23 +373,10 @@ class AIAssistantGUI(QMainWindow):
             self.file_changes_list.clear()
             self.apply_changes_button.setVisible(False)  # Hide the button after changes are applied
             QMessageBox.information(self, "Response processed", "All file changes have been saved successfully.")
-            
-            # Show the latest git commit
-            self.show_latest_commit()
         except Exception as e:
             self.log('error', f"Error applying file changes: {str(e)}")
             QMessageBox.critical(self, "Error", f"Failed to apply file changes: {str(e)}")
 
-    def get_latest_commit(self):
-        try:
-            result = subprocess.run(['git', 'log', '-1', '--oneline'], 
-                                    cwd=self.logic.project_folder,
-                                    capture_output=True, text=True, check=True)
-            return result.stdout.strip()
-        except subprocess.CalledProcessError as e:
-            self.log('error', f"Error getting latest git commit: {str(e)}")
-            return "Unable to retrieve latest commit"
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;After changes are applied show a box showing the latest git commit&lt;/Task&gt;
 
-    def show_latest_commit(self):
-        commit = self.get_latest_commit()
-        QMessageBox.information(self, "Latest Git Commit", f"Latest commit:\n{commit}")
