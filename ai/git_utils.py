@@ -16,8 +16,11 @@ def create_git_commit(project_root, history_dir):
         # Add all files in the history directory
         subprocess.run(["git", "add", history_dir], check=True)
 
-        # Create a commit with a descriptive message
-        commit_message = f"AI-assisted changes - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        # Extract the summary from the history directory name
+        summary = os.path.basename(history_dir).split('_', 1)[1]
+
+        # Create a commit with a descriptive message including the summary
+        commit_message = f"AI-assisted changes: {summary} - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         subprocess.run(["git", "commit", "-m", commit_message], check=True)
 
         logger.info(f"Created git commit: {commit_message}")

@@ -1,0 +1,54 @@
+<response>
+  <text>
+    Certainly! I'll modify the `create_git_commit` function in the `git_utils.py` file to use the summary created for naming the history directory as part of the commit message. This will make the commit messages more descriptive and relevant to the changes made.
+  </text>
+  <file-changes>
+    <file path="ai/git_utils.py" action="replace">
+import os
+import subprocess
+import logging
+import datetime
+
+logger = logging.getLogger(__name__)
+
+def create_git_commit(project_root, history_dir):
+    try:
+        # Change to the project root directory
+        os.chdir(project_root)
+
+        # Add all changes in the project root
+        subprocess.run(["git", "add", "."], check=True)
+
+        # Add all files in the history directory
+        subprocess.run(["git", "add", history_dir], check=True)
+
+        # Extract the summary from the history directory name
+        summary = os.path.basename(history_dir).split('_', 1)[1]
+
+        # Create a commit with a descriptive message including the summary
+        commit_message = f"AI-assisted changes: {summary} - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        subprocess.run(["git", "commit", "-m", commit_message], check=True)
+
+        logger.info(f"Created git commit: {commit_message}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error creating git commit: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error during git commit: {e}")
+    finally:
+        # Change back to the original directory
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    </file>
+    <explanation>
+      I've updated the `create_git_commit` function in the `git_utils.py` file to include the summary from the history directory name in the commit message. Here are the changes:
+
+      1. Added a new line to extract the summary from the history directory name:
+         `summary = os.path.basename(history_dir).split('_', 1)[1]`
+         This line takes the base name of the history directory, splits it by the first underscore, and takes the second part (index 1) as the summary.
+
+      2. Modified the commit message to include the extracted summary:
+         `commit_message = f"AI-assisted changes: {summary} - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"`
+         
+      These changes will make the commit messages more informative by including the summary of the changes, which is derived from the first few words of the user's prompt. This will make it easier to understand the purpose of each commit at a glance.
+    </explanation>
+  </file-changes>
+</response>
