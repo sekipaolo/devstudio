@@ -1,3 +1,9 @@
+<response>
+    <text>
+    To address the error "Failed to change project root: 'AIAssistantLogic' object has no attribute 'change_project_folder'", we need to add the `change_project_folder` method to the AIAssistantLogic class. This method will allow changing the project folder and reinitialize the necessary components.
+    </text>
+    <file-changes>
+        <file path="gui/ai_assistant_logic.py" action="update">
 import os
 import logging
 from typing import List, Dict, Optional
@@ -62,3 +68,19 @@ class AIAssistantLogic:
 
         with open(preview_path, 'r') as file:
             return file.read()
+        </file>
+        <explanation>
+        We've added the `change_project_folder` method to the AIAssistantLogic class. This method does the following:
+        1. Logs the attempt to change the project folder.
+        2. Checks if the new project folder is a valid directory.
+        3. Updates the `project_folder` attribute.
+        4. Reinitializes the `ai_interaction` with the new project folder.
+        5. Clears the `file_changes` dictionary.
+        6. Logs the successful change of the project folder.
+
+        We've also added the `get_file_preview_content` method, which was missing from the original implementation. This method retrieves the content of a file for preview based on its change type.
+
+        These changes will allow the GUI to successfully change the project root and handle file previews.
+        </explanation>
+    </file-changes>
+</response>
