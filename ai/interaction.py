@@ -4,31 +4,28 @@ from anthropic import Anthropic
 from dotenv import load_dotenv
 from .response_processor import ResponseProcessor
 from .prompt_processor import PromptProcessor
-from .git_utils import create_git_commit
+
 
 load_dotenv()
 import logging
-
+from config.global_config import config
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 class AIInteraction:
-    def __init__(self, project_root):
+    def __init__(self):
         self.anthropic = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-        self.project_root = project_root
         self.selected_files = None
-        self.prompt_processor = PromptProcessor(project_root)
-        logger.debug(f"AIInteraction initialized with project root: {project_root}")
+        self.prompt_processor = PromptProcessor()
 
     def process_prompt(self, prompt, selected_files):
         logger.debug("Processing prompt")
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         summary = self._generate_summary(prompt)
-        self.history_dir = os.path.join('history', f"{timestamp}_{summary}")
-        self.artifacts_dir = os.path.join(self.history_dir, 'artifacts')
-        os.makedirs(self.history_dir, exist_ok=True)
-        os.makedirs(self.artifacts_dir, exist_ok=True)
-        logger.debug(f"Created history directory: {self.history_dir}")
+        config.set("history_dir", os.path.join(config.get("project_root"), 'history', f"{timestamp}_{summary}"))
+        config.set("artifacts_dir", os.path.join(config.get("history_dir"), 'artifacts'))
+        os.makedirs(config.get("history_dir"), exist_ok=True)
+        os.makedirs(config.get("artifacts_dir"), exist_ok=True)
 
         formatted_prompt = self._prepare_prompt(prompt, selected_files)
         self._save_prompt(formatted_prompt)
@@ -40,11 +37,10 @@ class AIInteraction:
         response = raw_response.content[0].text
         self._save_response(response)
 
-        processor = ResponseProcessor(self.project_root, self.artifacts_dir)
+        processor = ResponseProcessor()
         processor.process_response(response)
         logger.debug("Processed response")
             
-        create_git_commit(self.project_root, self.history_dir)
         logger.info("Response processed and git commit created. Please check the 'history' directory for the saved chat and artifacts.")
         return response, processor
 
@@ -52,7 +48,7 @@ class AIInteraction:
         return self.prompt_processor.prepare_prompt(prompt, selected_files)
 
     def _save_prompt(self, formatted_prompt):
-        with open(os.path.join(self.history_dir, 'prompt.xml'), 'w') as f:
+        with open(os.path.join(config.get("history_dir"), 'prompt.xml'), 'w') as f:
             f.write(formatted_prompt)
         logger.debug("Saved prompt to history")
 
@@ -66,7 +62,7 @@ class AIInteraction:
         )
 
     def _save_response(self, response):
-        with open(os.path.join(self.history_dir, 'response.xml'), 'w') as f:
+        with open(os.path.join(config.get("history_dir"), 'response.xml'), 'w') as f:
             f.write(response)
         logger.debug("Saved response to history")
 

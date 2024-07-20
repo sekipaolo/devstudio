@@ -2,16 +2,14 @@ import os
 import re
 import logging
 from .xml_parser import XMLParser
-
+from config.global_config import config
 class ResponseProcessor:
-    def __init__(self, project_root, artifacts_dir):
-        self.project_root = project_root
-        self.artifacts_dir = project_root
+    def __init__(self, ):
+
         self.response = {}
         logging.basicConfig(level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
         self.xml_parser = XMLParser()
-        self.logger.debug(f"ResponseProcessor initialized with project root: {project_root} and artifacts dir: {artifacts_dir}")
 
     def process_response(self, response):
         self.logger.debug("Processing response")
@@ -47,14 +45,14 @@ class ResponseProcessor:
     def process_file(self, file_info):
         file_path = file_info['path']
         action = file_info['action']
-        original_path = os.path.join(self.project_root, file_path)
-        tmp_path = os.path.join(self.artifacts_dir, file_path)
+        original_path = os.path.join(config.get("project_root"), file_path)
+        tmp_path = os.path.join(config.get("artifacts_dir"), file_path)
 
         self.logger.debug(f"Processing file: {file_path} with action: {action}")
         if action == 'delete':
             if os.path.exists(original_path):
                 self.logger.info(f"Marked file for deletion: {file_path}")
-                with open(os.path.join(self.artifacts_dir, 'deletions.txt'), 'w') as f:
+                with open(os.path.join(config.get("artifacts_dir"), 'deletions.txt'), 'w') as f:
                     f.write(file_path + "\n")
             else:
                 self.logger.warning(f"Attempted to delete non-existent file: {file_path}")

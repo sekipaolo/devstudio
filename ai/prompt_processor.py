@@ -4,10 +4,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
+from config.global_config import config
 class PromptProcessor:
-    def __init__(self, project_root):
-        self.project_root = project_root
+    def __init__(self):
+        pass
 
     def prepare_prompt(self, prompt, selected_files):
         logger.debug("Preparing prompt")
@@ -32,7 +32,7 @@ class PromptProcessor:
 
         sources_text = ""
         for file in selected_files:
-            relative_path = os.path.relpath(file['path'], start=self.project_root)
+            relative_path = os.path.relpath(file['path'], start=config.get("project_root"))
             file_type, _ = mimetypes.guess_type(file['path'])
             if file_type is None:
                 file_type = "application/octet-stream"
