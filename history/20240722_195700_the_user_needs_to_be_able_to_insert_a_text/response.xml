@@ -1,3 +1,10 @@
+Here's my response with the requested changes:
+
+<response>
+  <text>I've made the necessary changes to implement the feature you described. I've added a new text input field for the change name, updated the confirm_and_send method to save and reset the change name, and made some minor adjustments to the layout to accommodate the new input field.</text>
+  <file-changes>
+    <file path="gui/main_window.py" action="replace">
+      <![CDATA[
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit
 from PyQt6.QtCore import Qt, QTimer
@@ -142,3 +149,22 @@ class AIAssistantGUI(QMainWindow):
     def show_file_preview(self, file_path, content):
         preview = FilePreviewPopup(file_path, content)
         preview.exec()
+      ]]>
+    </file>
+    <explanation>
+      I've made the following changes to the gui/main_window.py file:
+
+      1. Added a new import for QLineEdit from PyQt6.QtWidgets.
+      2. In the create_right_panel method, I've added a new QHBoxLayout for the change name input:
+         - Created a QLabel for "Change name:"
+         - Added a QLineEdit widget called change_name_input
+         - Added both to the layout
+      3. Updated the confirm_and_send method to:
+         - Get the text from the change_name_input
+         - Set the "change_name" in the config using config.set("change_name", change_name)
+         - Clear the change_name_input after saving the value
+
+      These changes allow the user to input a change name, which is then saved in the config when the confirm button is clicked. The input field is cleared after sending the request to the AI, effectively resetting it for the next use.
+    </explanation>
+  </file-changes>
+</response>

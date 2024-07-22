@@ -1,5 +1,27 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/main_window.py"&gt;
 import logging
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox
 from PyQt6.QtCore import Qt, QTimer
 from .file_tree import FileTreeView
 from .widgets import PromptInput, ConfirmButton, ResponseDisplay, StatusProgressBar, StatusLabel
@@ -53,12 +75,6 @@ class AIAssistantGUI(QMainWindow):
         right_layout.addWidget(QLabel('Enter your prompt:'))
         right_layout.addWidget(self.prompt_input)
 
-        change_name_layout = QHBoxLayout()
-        change_name_layout.addWidget(QLabel('Change name:'))
-        self.change_name_input = QLineEdit()
-        change_name_layout.addWidget(self.change_name_input)
-        right_layout.addLayout(change_name_layout)
-
         button_layout = QHBoxLayout()
         self.confirm_button = ConfirmButton()
         self.confirm_button.clicked.connect(self.confirm_and_send)
@@ -100,10 +116,6 @@ class AIAssistantGUI(QMainWindow):
             self.logger.error("No files selected. Please select files before sending.")
             return
 
-        change_name = self.change_name_input.text()
-        config.set("change_name", change_name)
-        self.change_name_input.clear()
-
         self.status_progress_bar.setVisible(True)
         self.status_label.update_status("Sending request to AI...")
         
@@ -142,3 +154,7 @@ class AIAssistantGUI(QMainWindow):
     def show_file_preview(self, file_path, content):
         preview = FilePreviewPopup(file_path, content)
         preview.exec()
+
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;The user needs to be able to insert a text which is saved in the config (config.set("change_name", value of the textbox). This should be reset as soon as the ai response is sent&lt;/Task&gt;
+
