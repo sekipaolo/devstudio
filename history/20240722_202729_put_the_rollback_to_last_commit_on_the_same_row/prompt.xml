@@ -1,3 +1,25 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/main_window.py"&gt;
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -33,18 +55,8 @@ class AIAssistantGUI(QMainWindow):
         self.logging_toggle = LoggingToggle(self.logger)
         layout.addWidget(self.logging_toggle)
 
-        # Create a horizontal layout for project root and rollback buttons
-        project_buttons_layout = QHBoxLayout()
-        
         self.project_root_manager = ProjectRootManager(self)
-        project_buttons_layout.addWidget(self.project_root_manager.change_root_button)
-
-        self.rollback_button = QPushButton("Rollback to Last Commit")
-        self.rollback_button.clicked.connect(self.rollback_to_last_commit)
-        project_buttons_layout.addWidget(self.rollback_button)
-
-        # Add the horizontal layout to the main layout
-        layout.addLayout(project_buttons_layout)
+        layout.addWidget(self.project_root_manager.change_root_button)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         layout.addWidget(splitter)
@@ -81,6 +93,10 @@ class AIAssistantGUI(QMainWindow):
         self.apply_changes_button.clicked.connect(self.apply_file_changes)
         self.apply_changes_button.setVisible(False)
         button_layout.addWidget(self.apply_changes_button)
+
+        self.rollback_button = QPushButton("Rollback to Last Commit")
+        self.rollback_button.clicked.connect(self.rollback_to_last_commit)
+        button_layout.addWidget(self.rollback_button)
 
         right_layout.addLayout(button_layout)
 
@@ -201,3 +217,7 @@ class AIAssistantGUI(QMainWindow):
         except Exception as e:
             self.logger.error(f"Unexpected error during rollback: {str(e)}")
             self.status_label.update_status("Unexpected error during rollback")
+
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;Put the rollback to last commit on the same row as change project root. After applying changes do not show a popup but a status message in the gui&lt;/Task&gt;
+

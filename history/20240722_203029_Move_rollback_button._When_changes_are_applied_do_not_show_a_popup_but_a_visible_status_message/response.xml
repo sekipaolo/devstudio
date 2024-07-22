@@ -1,3 +1,8 @@
+<response>
+    <text>Certainly! I'll modify the `AIAssistantGUI` class to move the rollback button to the same row as the change project root button. This will involve adjusting the layout and moving the rollback button creation and placement.</text>
+    <file-changes>
+        <file path="gui/main_window.py" action="replace">
+            <![CDATA[
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -201,3 +206,18 @@ class AIAssistantGUI(QMainWindow):
         except Exception as e:
             self.logger.error(f"Unexpected error during rollback: {str(e)}")
             self.status_label.update_status("Unexpected error during rollback")
+            ]]>
+        </file>
+        <explanation>
+            The changes made to the `AIAssistantGUI` class in the `gui/main_window.py` file are as follows:
+
+            1. Removed the rollback button from the `create_right_panel` method.
+            2. Created a new horizontal layout called `project_buttons_layout` in the `initUI` method.
+            3. Added the project root change button to `project_buttons_layout`.
+            4. Created and added the rollback button to `project_buttons_layout`.
+            5. Added the `project_buttons_layout` to the main layout.
+
+            These changes place the rollback button on the same row as the change project root button, improving the layout and usability of the interface.
+        </explanation>
+    </file-changes>
+</response>

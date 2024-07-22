@@ -35,7 +35,6 @@ class AIAssistantGUI(QMainWindow):
 
         # Create a horizontal layout for project root and rollback buttons
         project_buttons_layout = QHBoxLayout()
-        
         self.project_root_manager = ProjectRootManager(self)
         project_buttons_layout.addWidget(self.project_root_manager.change_root_button)
 
@@ -43,7 +42,6 @@ class AIAssistantGUI(QMainWindow):
         self.rollback_button.clicked.connect(self.rollback_to_last_commit)
         project_buttons_layout.addWidget(self.rollback_button)
 
-        # Add the horizontal layout to the main layout
         layout.addLayout(project_buttons_layout)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -164,8 +162,11 @@ class AIAssistantGUI(QMainWindow):
             self.file_changes_list.clear()
             self.apply_changes_button.setVisible(False)
             self.project_root_manager.show_latest_commit()
+            self.status_label.update_status("Changes applied successfully!")
+            QTimer.singleShot(3000, lambda: self.status_label.setVisible(False))
         except Exception as e:
             self.logger.error(f"Error applying file changes: {str(e)}")
+            self.status_label.update_status("Error applying file changes")
 
     def show_file_preview(self, file_path, content):
         preview = FilePreviewPopup(file_path, content)
