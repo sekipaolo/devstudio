@@ -1,0 +1,40 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="main.py"&gt;
+import sys
+from PyQt6.QtWidgets import QApplication
+from gui import AIAssistantGUI
+import os
+
+def main():
+    app = QApplication(sys.argv)
+    # Get the project root directory from argument or use the current directory
+    ex = AIAssistantGUI(project_root)
+    ex.show()
+    sys.exit(app.exec())
+
+if __name__ == '__main__':
+    main()
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;I want to be able to run main.py pèassing a argument pr to specify th eproject root to pass to the gui
+&lt;/Task&gt;
+

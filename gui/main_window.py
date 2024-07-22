@@ -14,9 +14,9 @@ import subprocess
 from ai import git_utils
 
 class AIAssistantGUI(QMainWindow):
-    def __init__(self):
+    def __init__(self, project_root):
         super().__init__()
-        config.set("project_root", "/home/sekipaolo/apps/agi/devstudio")
+        config.set("project_root", project_root)
         self.logic = AIAssistantLogic()
         self.logger = setup_logging()
         self.has_unapplied_changes = False
