@@ -1,3 +1,8 @@
+<response>
+    <text>Certainly! I'll enhance the syntax highlighting for Python files in the preview by adding more color rules and improving the existing ones. This will make the code more readable and visually appealing.</text>
+    <file-changes>
+        <file path="gui/file_preview_popup.py" action="replace">
+            <![CDATA[
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QLabel
 from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont
 import re
@@ -78,3 +83,20 @@ class FilePreviewPopup(QDialog):
         # Set a monospace font for better code readability
         font = QFont("Courier New", 10)
         self.text_edit.setFont(font)
+            ]]>
+        </file>
+        <explanation>
+            I've made the following improvements to the syntax highlighting:
+
+            1. Expanded the list of keywords and made them bold.
+            2. Improved string highlighting to handle multi-line strings and escape characters.
+            3. Added highlighting for function and class definitions.
+            4. Added highlighting for numbers (integers, hexadecimals, and floats).
+            5. Added highlighting for decorators.
+            6. Made the keyword highlighting case-sensitive.
+            7. Set a monospace font (Courier New) for better code readability.
+
+            These changes will make the Python code in the preview more visually appealing and easier to read. The syntax highlighting now covers more Python language features, making it easier for users to distinguish between different code elements.
+        </explanation>
+    </file-changes>
+</response>
