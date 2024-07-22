@@ -9,6 +9,7 @@ def main():
     # Check if a project root argument is provided
     if len(sys.argv) > 1:
         project_root = sys.argv[1]
+        print("Project root:", sys.argv)
     else:
         # Use the current directory as default if no argument is provided
         project_root = os.getcwd()
