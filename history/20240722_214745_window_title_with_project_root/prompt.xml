@@ -1,3 +1,25 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/main_window.py"&gt;
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -12,7 +34,6 @@ from config.global_config import config
 from .file_preview_popup import FilePreviewPopup
 import subprocess
 from ai import git_utils
-import os
 
 class AIAssistantGUI(QMainWindow):
     def __init__(self, project_root):
@@ -24,7 +45,7 @@ class AIAssistantGUI(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle(os.path.basename(config.get("project_root")))
+        self.setWindowTitle('AI Assistant GUI')
         self.setGeometry(100, 100, 1200, 800)
 
         central_widget = QWidget()
@@ -235,3 +256,7 @@ class AIAssistantGUI(QMainWindow):
                 event.ignore()
         else:
             event.accept()
+
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;Set the window title to the project root&lt;/Task&gt;
+

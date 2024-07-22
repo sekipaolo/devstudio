@@ -1,3 +1,8 @@
+<response>
+    <text>Certainly! I'll modify the `AIAssistantGUI` class to set the window title to the project root. This change will make it easier for users to identify which project they are currently working on.</text>
+    <file-changes>
+        <file path="gui/main_window.py" action="replace">
+<![CDATA[
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -235,3 +240,23 @@ class AIAssistantGUI(QMainWindow):
                 event.ignore()
         else:
             event.accept()
+]]>
+        </file>
+        <explanation>
+The main change in this update is setting the window title to the project root name. Here's what was modified:
+
+1. Added an import statement for the `os` module at the beginning of the file:
+   ```python
+   import os
+   ```
+
+2. Modified the `initUI` method to set the window title to the basename of the project root:
+   ```python
+   def initUI(self):
+       self.setWindowTitle(os.path.basename(config.get("project_root")))
+   ```
+
+This change will display the name of the current project directory as the window title, making it easier for users to identify which project they are working on. The rest of the file remains unchanged.
+        </explanation>
+    </file-changes>
+</response>
