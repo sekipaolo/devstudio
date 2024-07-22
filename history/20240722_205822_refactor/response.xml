@@ -1,3 +1,76 @@
+<response>
+    <text>Certainly! I'll move the rollback functionality from the main_window.py file to the git_utils.py file. This will help improve the separation of concerns and make the code more modular. I'll update both files accordingly.</text>
+    <file-changes>
+        <file path="ai/git_utils.py" action="replace">
+            <![CDATA[
+import os
+import subprocess
+import logging
+import datetime
+from config.global_config import config
+
+logger = logging.getLogger(__name__)
+
+def create_git_commit():
+    try:
+        # Change to the project root directory
+        os.chdir(config.get("project_root"))
+
+        # Add all changes in the project root
+        subprocess.run(["git", "add", "."], check=True)
+
+        # Add all files in the history directory
+        subprocess.run(["git", "add", config.get("history_dir")], check=True)
+
+        # Extract the summary from the history directory name
+        summary = os.path.basename(config.get("change_name"))
+
+        # Create a commit with a descriptive message including the summary
+        commit_message = f"AI-assisted changes: {summary} - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        subprocess.run(["git", "commit", "-m", commit_message], check=True)
+
+        logger.info(f"Created git commit: {commit_message}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error creating git commit: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error during git commit: {e}")
+    finally:
+        # Change back to the original directory
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+def rollback_to_last_commit():
+    try:
+        # Check for uncommitted changes
+        result = subprocess.run(["git", "status", "--porcelain"], cwd=config.get("project_root"), capture_output=True, text=True)
+        if result.stdout.strip():
+            # There are uncommitted changes
+            return "uncommitted_changes"
+
+        # Rollback to the last commit
+        subprocess.run(["git", "reset", "--hard", "HEAD~1"], cwd=config.get("project_root"), check=True)
+        return "success"
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error rolling back to last commit: {str(e)}")
+        return f"error: {str(e)}"
+    except Exception as e:
+        logger.error(f"Unexpected error during rollback: {str(e)}")
+        return f"unexpected_error: {str(e)}"
+
+def hard_reset():
+    try:
+        subprocess.run(["git", "reset", "--hard", "HEAD"], cwd=config.get("project_root"), check=True)
+        subprocess.run(["git", "clean", "-fd"], cwd=config.get("project_root"), check=True)
+        return "success"
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error performing hard reset: {str(e)}")
+        return f"error: {str(e)}"
+    except Exception as e:
+        logger.error(f"Unexpected error during hard reset: {str(e)}")
+        return f"unexpected_error: {str(e)}"
+            ]]>
+        </file>
+        <file path="gui/main_window.py" action="replace">
+            <![CDATA[
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -231,3 +304,22 @@ class AIAssistantGUI(QMainWindow):
                 event.ignore()
         else:
             event.accept()
+            ]]>
+        </file>
+        <explanation>
+            I have moved the rollback functionality from main_window.py to git_utils.py. Here are the changes:
+
+            1. In git_utils.py:
+            - Added a new function `rollback_to_last_commit()` that handles the rollback logic.
+            - Added a new function `hard_reset()` to handle the hard reset operation.
+            - Both functions return status strings to indicate the result of the operation.
+
+            2. In main_window.py:
+            - Imported the git_utils module.
+            - Updated the `rollback_to_last_commit()` method to use the new functions from git_utils.
+            - The method now handles the different results returned by the git_utils functions and updates the GUI accordingly.
+
+            These changes improve the separation of concerns by moving the Git-related operations to the git_utils module, while keeping the GUI-specific logic in the main_window file.
+        </explanation>
+    </file-changes>
+</response>
