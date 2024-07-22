@@ -1,3 +1,8 @@
+<response>
+    <text>To make the rollback button always visible, even on GUI startup, we need to modify the `AIAssistantGUI` class in the `main_window.py` file. We'll initialize the rollback button as visible in the `create_right_panel` method and remove the code that hides it. Here's the updated version of the file with the necessary changes:</text>
+    <file-changes>
+        <file path="gui/main_window.py" action="replace">
+<![CDATA[
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -195,3 +200,39 @@ class AIAssistantGUI(QMainWindow):
         except Exception as e:
             self.logger.error(f"Unexpected error during rollback: {str(e)}")
             self.status_label.update_status("Unexpected error during rollback")
+]]>
+        </file>
+        <explanation>
+The following changes were made to make the rollback button always visible:
+
+1. In the `create_right_panel` method, we removed the `setVisible(False)` call for the rollback button:
+   ```python
+   self.rollback_button = QPushButton("Rollback to Last Commit")
+   self.rollback_button.clicked.connect(self.rollback_to_last_commit)
+   button_layout.addWidget(self.rollback_button)
+   ```
+
+2. In the `apply_file_changes` method, we removed the line that was setting the rollback button to visible:
+   ```python
+   def apply_file_changes(self):
+       try:
+           self.logic.apply_file_changes()
+           self.populate_file_tree()
+           self.file_changes_list.clear()
+           self.apply_changes_button.setVisible(False)
+           self.project_root_manager.show_latest_commit()
+       except Exception as e:
+           self.logger.error(f"Error applying file changes: {str(e)}")
+   ```
+
+3. In the `rollback_to_last_commit` method, we removed the line that was hiding the rollback button:
+   ```python
+   self.populate_file_tree()
+   self.status_label.update_status("Successfully rolled back to the last commit")
+   QTimer.singleShot(3000, lambda: self.status_label.setVisible(False))
+   ```
+
+These changes ensure that the rollback button is always visible, even on GUI startup, and remains visible after applying changes or performing a rollback.
+        </explanation>
+    </file-changes>
+</response>
