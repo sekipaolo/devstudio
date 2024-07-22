@@ -1,0 +1,639 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="ai/git_utils.py"&gt;
+import os
+import subprocess
+import logging
+import datetime
+from config.global_config import config
+logger = logging.getLogger(__name__)
+
+def create_git_commit():
+    try:
+        # Change to the project root directory
+        os.chdir(config.get("project_root"))
+
+        # Add all changes in the project root
+        subprocess.run(["git", "add", "."], check=True)
+
+        # Add all files in the history directory
+        subprocess.run(["git", "add", config.get("history_dir")], check=True)
+
+        # Extract the summary from the history directory name
+        summary = os.path.basename(config.get("history_dir")).split('_', 1)[1]
+
+        # Create a commit with a descriptive message including the summary
+        commit_message = f"AI-assisted changes: {summary} - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        subprocess.run(["git", "commit", "-m", commit_message], check=True)
+
+        logger.info(f"Created git commit: {commit_message}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error creating git commit: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error during git commit: {e}")
+    finally:
+        # Change back to the original directory
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+&lt;/Source&gt;
+&lt;Source path="ai/interaction.py"&gt;
+import datetime
+import os
+from anthropic import Anthropic
+from dotenv import load_dotenv
+from .response_processor import ResponseProcessor
+from .prompt_processor import PromptProcessor
+
+
+load_dotenv()
+import logging
+from config.global_config import config
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+class AIInteraction:
+    def __init__(self):
+        self.anthropic = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        self.selected_files = None
+        self.prompt_processor = PromptProcessor()
+
+    def process_prompt(self, prompt, selected_files):
+        logger.debug("Processing prompt")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        summary = self._generate_summary(prompt)
+        config.set("history_dir", os.path.join(config.get("project_root"), 'history', f"{timestamp}_{summary}"))
+        config.set("artifacts_dir", os.path.join(config.get("history_dir"), 'artifacts'))
+        os.makedirs(config.get("history_dir"), exist_ok=True)
+        os.makedirs(config.get("artifacts_dir"), exist_ok=True)
+
+        formatted_prompt = self._prepare_prompt(prompt, selected_files)
+        self._save_prompt(formatted_prompt)
+
+        logger.debug("Sending request to Anthropic API")
+        raw_response = self._send_request_to_anthropic(formatted_prompt)
+        logger.debug("Received response from Anthropic API")
+
+        response = raw_response.content[0].text
+        self._save_response(response)
+
+        processor = ResponseProcessor()
+        processor.process_response(response)
+        logger.debug("Processed response")
+            
+        logger.info("Response processed and git commit created. Please check the 'history' directory for the saved chat and artifacts.")
+        return response, processor
+
+    def _prepare_prompt(self, prompt, selected_files):
+        return self.prompt_processor.prepare_prompt(prompt, selected_files)
+
+    def _save_prompt(self, formatted_prompt):
+        with open(os.path.join(config.get("history_dir"), 'prompt.xml'), 'w') as f:
+            f.write(formatted_prompt)
+        logger.debug("Saved prompt to history")
+
+    def _send_request_to_anthropic(self, formatted_prompt):
+        return self.anthropic.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=4096,
+            messages=[
+                {"role": "user", "content": formatted_prompt}
+            ]
+        )
+
+    def _save_response(self, response):
+        with open(os.path.join(config.get("history_dir"), 'response.xml'), 'w') as f:
+            f.write(response)
+        logger.debug("Saved response to history")
+
+    def _generate_summary(self, prompt):
+        words = prompt.split()
+        summary = '_'.join(words[:10])  # Take the first 10 words
+        summary = summary.lower()  # Convert to lowercase
+        summary = ''.join(c if c.isalnum() or c == '_' else '_' for c in summary)  # Replace non-alphanumeric chars with underscore
+        summary = summary[:50]  # Limit to 50 characters
+        return summary
+
+&lt;/Source&gt;
+&lt;Source path="gui/ai_assistant_logic.py"&gt;
+import os
+import logging
+from typing import List, Dict, Optional
+from ai import AIInteraction
+from config.global_config import config
+from ai.git_utils import create_git_commit
+import shutil
+class AIAssistantLogic:
+    def __init__(self, ):
+        self.ai_interaction: AIInteraction = AIInteraction()
+        self.file_changes: Dict[str, str] = {}
+        
+        # Set up logging
+        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        self.logger = logging.getLogger(__name__)
+        
+    def process_prompt(self, prompt: str, selected_files: List[Dict[str, str]]):
+        result = self.ai_interaction.process_prompt(prompt, selected_files)
+        return result
+
+    def apply_file_changes(self):
+        self.logger.debug("Applying file changes")
+
+        artifacts_dir = config.get("artifacts_dir")
+        project_root = config.get("project_root")
+
+        # Copy all files from artifacts_dir to project_root
+        for root, _, files in os.walk(artifacts_dir):
+            for file in files:
+                if file == "deletions.txt":
+                    continue
+                src_path = os.path.join(root, file)
+                rel_path = os.path.relpath(src_path, artifacts_dir)
+                dst_path = os.path.join(project_root, rel_path)
+
+                self.logger.debug(f"Copying file: {rel_path}")
+                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+                shutil.copy2(src_path, dst_path)
+
+        # Delete files listed in deletions.txt
+        deletions_file = os.path.join(artifacts_dir, "deletions.txt")
+        if os.path.exists(deletions_file):
+            with open(deletions_file, 'r') as f:
+                for line in f:
+                    file_to_delete = line.strip()
+                    if file_to_delete:
+                        file_path = os.path.join(project_root, file_to_delete)
+                        if os.path.exists(file_path):
+                            self.logger.debug(f"Deleting file: {file_to_delete}")
+                            os.remove(file_path)
+                        else:
+                            self.logger.warning(f"File not found for deletion: {file_to_delete}")
+
+        self.logger.debug("All file changes applied")
+        create_git_commit()
+        self.logger.debug("Created git commit")
+
+    def get_file_preview_content(self, file_path: str, change_type: str) -&gt; str:
+        if change_type in ["create", "replace"]:
+            preview_path = os.path.join(config.get("artifacts_dir"), file_path)
+        elif change_type == "delete":
+            preview_path = os.path.join(config.get("project_root"), file_path)
+        else:
+            raise ValueError(f"Invalid change type: {change_type}")
+
+        with open(preview_path, 'r') as file:
+            return file.read()
+
+&lt;/Source&gt;
+&lt;Source path="gui/main_window.py"&gt;
+import os
+import logging
+import subprocess
+from typing import List, Dict, Optional
+from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
+         QSplitter, QInputDialog, QLabel, QTextEdit, QPushButton, QListWidget, QListWidgetItem, QMessageBox, QCheckBox, QFileDialog)
+from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QIcon
+from .file_tree import FileTreeView, FileTreeItem
+from .widgets import (PromptInput, ConfirmButton, ResponseDisplay, StatusProgressBar, StatusLabel, FileChangeWidget)
+from .file_preview_popup import FilePreviewPopup
+from .ai_assistant_logic import AIAssistantLogic
+from config.global_config import config
+
+config.set("project_root", "/home/sekipaolo/apps/agi/devstudio")
+
+class AIAssistantGUI(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.logic = AIAssistantLogic()
+        self.setup_logging()
+        self.initUI()
+
+    def setup_logging(self):
+        self.logger = logging.getLogger('GUI')
+        self.logger.setLevel(logging.DEBUG)
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+        self.logging_enabled = True
+
+    def toggle_logging(self, state):
+        self.logging_enabled = state == Qt.CheckState.Checked.value
+        if self.logging_enabled:
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger.setLevel(logging.CRITICAL)
+
+    def log(self, level, message):
+        if self.logging_enabled:
+            if level == 'debug':
+                self.logger.debug(message)
+            elif level == 'info':
+                self.logger.info(message)
+            elif level == 'warning':
+                self.logger.warning(message)
+            elif level == 'error':
+                self.logger.error(message)
+            elif level == 'critical':
+                self.logger.critical(message)
+
+    def initUI(self):
+        self.setWindowTitle('AI Assistant GUI')
+        self.setGeometry(100, 100, 1200, 800)
+
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+        layout = QVBoxLayout()
+        central_widget.setLayout(layout)
+
+        # Add logging toggle checkbox
+        self.logging_checkbox = QCheckBox("Enable GUI Logging")
+        self.logging_checkbox.setChecked(True)
+        self.logging_checkbox.stateChanged.connect(self.toggle_logging)
+        layout.addWidget(self.logging_checkbox)
+
+        # Add button to change project root
+        self.change_root_button = QPushButton("Change Project Root")
+        self.change_root_button.clicked.connect(self.change_project_root)
+        layout.addWidget(self.change_root_button)
+
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        layout.addWidget(splitter)
+
+        self.file_tree = FileTreeView()
+        self.file_tree.clicked.connect(self.on_item_clicked)
+        self.file_tree.doubleClicked.connect(self.on_item_double_clicked)
+        splitter.addWidget(self.file_tree)
+
+        right_panel = QWidget()
+        right_layout = QVBoxLayout(right_panel)
+
+        self.prompt_input = PromptInput()
+        right_layout.addWidget(QLabel('Enter your prompt:'))
+        right_layout.addWidget(self.prompt_input)
+
+        button_layout = QHBoxLayout()
+        self.confirm_button = ConfirmButton()
+        self.confirm_button.clicked.connect(self.confirm_and_send)
+        self.confirm_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2C3E50;
+                color: white;
+                border: none;
+                padding: 5px 15px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #34495E;
+            }
+            QPushButton:pressed {
+                background-color: #1ABC9C;
+            }
+        """)
+        button_layout.addWidget(self.confirm_button)
+
+        self.apply_changes_button = QPushButton("Apply Changes")
+        self.apply_changes_button.clicked.connect(self.apply_file_changes)
+        self.apply_changes_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2C3E50;
+                color: white;
+                border: none;
+                padding: 5px 15px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #34495E;
+            }
+            QPushButton:pressed {
+                background-color: #1ABC9C;
+            }
+        """)
+        self.apply_changes_button.setVisible(False)  # Initially hide the button
+        button_layout.addWidget(self.apply_changes_button)
+
+        right_layout.addLayout(button_layout)
+
+        self.status_progress_bar = StatusProgressBar()
+        right_layout.addWidget(self.status_progress_bar)
+
+        self.status_label = StatusLabel()
+        right_layout.addWidget(self.status_label)
+
+        self.response_display = ResponseDisplay()
+        self.response_display.setVisible(False)
+        right_layout.addWidget(QLabel('AI Response:'))
+        right_layout.addWidget(self.response_display)
+
+        self.file_changes_list = QListWidget()
+        self.file_changes_list.setVisible(False)
+        right_layout.addWidget(QLabel('File Changes:'))
+        right_layout.addWidget(self.file_changes_list)
+
+        splitter.addWidget(right_panel)
+
+        self.populate_file_tree()
+
+    def change_project_root(self):
+        new_root = QFileDialog.getExistingDirectory(self, "Select Project Root Directory")
+        if new_root:
+            try:
+                config.set("project_root", new_root)
+                self.populate_file_tree()
+                self.log('info', f"Project root changed to: {new_root}")
+                QMessageBox.information(self, "Project Root Changed", f"Project root has been changed to:\n{new_root}")
+            except Exception as e:
+                self.log('error', f"Error changing project root: {str(e)}")
+                QMessageBox.critical(self, "Error", f"Failed to change project root: {str(e)}")
+
+    def populate_file_tree(self):
+        self.log('debug', "Populating file tree")
+        try:
+            model = self.file_tree.model()
+            if model:
+                model.clear()
+                root = model.invisibleRootItem()
+                self._populate_tree_recursive(config.get("project_root"), root)
+                self.log('debug', f"File tree populated with {model.rowCount()} root items")
+            else:
+                raise ValueError("File tree model is not initialized")
+        except Exception as e:
+            self.log('error', f"Error populating file tree: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to populate file tree: {str(e)}")
+
+    def _populate_tree_recursive(self, directory: str, parent: FileTreeItem):
+        try:
+            for name in sorted(os.listdir(directory)):
+                if name in ['.git', '__pycache__']:
+                    continue
+                path = os.path.join(directory, name)
+                if os.path.isdir(path):
+                    folder = FileTreeItem(name, is_dir=True)
+                    parent.appendRow(folder)
+                    self._populate_tree_recursive(path, folder)
+                else:
+                    item = FileTreeItem(name)
+                    parent.appendRow(item)
+        except Exception as e:
+            self.log('error', f"Error populating directory {directory}: {str(e)}")
+
+    def on_item_clicked(self, index):
+        # This method is now handled in the FileTreeView class
+        pass
+
+    def on_item_double_clicked(self, index):
+        item = self.file_tree.model().itemFromIndex(index)
+        if item.is_dir:  # It's a directory
+            return
+        
+        old_name = item.text()
+        new_name, ok = QInputDialog.getText(self, 'Rename File', 'Enter new file name:', text=old_name)
+        
+        if ok and new_name and new_name != old_name:
+            item.setText(new_name)
+            self.prompt_input.append(f"\nPlease rename the file '{old_name}' to '{new_name}'.")
+
+    def confirm_and_send(self):
+        prompt = self.prompt_input.toPlainText()
+        selected_files = self.get_selected_files()
+        
+        if not selected_files:
+            self.log('error', "No files selected. Please select files before sending.")
+            QMessageBox.warning(self, "No Files Selected", "Please select files before sending.")
+            return
+
+        self.status_progress_bar.setVisible(True)
+        self.status_label.update_status("Sending request to AI...")
+        
+        # Use QTimer to allow GUI to update before processing
+        QTimer.singleShot(100, lambda: self.process_ai_response(prompt, selected_files))
+
+    def process_ai_response(self, prompt: str, selected_files: List[Dict[str, str]]):
+        try:
+            response, processor = self.logic.process_prompt(prompt, selected_files)            
+            self.status_label.update_status("Processing AI response...")
+            self.response_display.display_processed_response(processor.response["text"])
+            self.response_display.setVisible(True)
+            
+            # Show file changes
+            self.show_file_changes(processor)
+
+            self.status_progress_bar.setVisible(False)
+            self.status_label.update_status("AI response processed successfully!")
+            
+            # Make the Apply Changes button visible
+            self.apply_changes_button.setVisible(True)
+            
+            # Hide status label after 3 seconds
+            QTimer.singleShot(3000, lambda: self.status_label.setVisible(False))
+        except Exception as e:
+            self.log('error', f"Error processing AI response: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to process AI response: {str(e)}")
+            self.status_progress_bar.setVisible(False)
+            self.status_label.update_status("Error processing AI response")
+
+    def get_selected_files(self) -&gt; List[Dict[str, str]]:
+        selected_files = []
+        def traverse(parent: FileTreeItem):
+            for row in range(parent.rowCount()):
+                child = parent.child(row)
+                if child.checkState() == Qt.CheckState.Checked and not child.is_dir:
+                    file_path = self.get_file_path(child)
+                    try:
+                        with open(file_path, 'r') as file:
+                            content = file.read()
+                        selected_files.append({"path": file_path, "content": content})
+                    except Exception as e:
+                        self.log('error', f"Error reading file {file_path}: {str(e)}")
+                if child.hasChildren():
+                    traverse(child)
+        
+        root = self.file_tree.model().invisibleRootItem()
+        traverse(root)
+        
+        return selected_files
+
+    def get_file_path(self, item: FileTreeItem) -&gt; str:
+        path = []
+        while item is not None:
+            path.append(item.text())
+            item = item.parent()
+        return os.path.join(config.get("project_root"), *reversed(path))
+
+    def show_file_changes(self, processor):
+        self.file_changes_list.clear()
+        self.logic.file_changes.clear()
+        for file in processor.response["files"]:
+            self.add_file_change_widget(file["path"], file["action"])
+        self.file_changes_list.setVisible(True)
+
+    def add_file_change_widget(self, file_path: str, change_type: str):
+        widget = FileChangeWidget(file_path, change_type)
+        widget.preview_clicked.connect(self.show_file_preview)
+        
+        item = QListWidgetItem(self.file_changes_list)
+        item.setSizeHint(widget.sizeHint())
+        
+        self.file_changes_list.addItem(item)
+        self.file_changes_list.setItemWidget(item, widget)
+        
+        self.logic.file_changes[file_path] = change_type
+
+    def show_file_preview(self, file_path: str):
+        change_type = self.logic.file_changes.get(file_path)
+
+        try:
+            content = self.logic.get_file_preview_content(file_path, change_type)
+            popup = FilePreviewPopup(file_path, content)
+            popup.exec()
+        except Exception as e:
+            self.log('error', f"Error showing file preview for {file_path}: {str(e)}")
+            QMessageBox.warning(self, "Preview Error", f"Failed to show preview for {file_path}: {str(e)}")
+
+    def apply_file_changes(self):
+        try:
+            self.logic.apply_file_changes()
+            self.populate_file_tree()  # Refresh the file tree
+            self.file_changes_list.clear()
+            self.apply_changes_button.setVisible(False)  # Hide the button after changes are applied
+            QMessageBox.information(self, "Response processed", "All file changes have been saved successfully.")
+            
+            # Show the latest git commit
+            self.show_latest_commit()
+        except Exception as e:
+            self.log('error', f"Error applying file changes: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to apply file changes: {str(e)}")
+
+    def get_latest_commit(self):
+        try:
+            result = subprocess.run(['git', 'log', '-1', '--oneline'], 
+                                    cwd=config.get("project_root"),
+                                    capture_output=True, text=True, check=True)
+            return result.stdout.strip()
+        except subprocess.CalledProcessError as e:
+            self.log('error', f"Error getting latest git commit: {str(e)}")
+            return "Unable to retrieve latest commit"
+
+    def show_latest_commit(self):
+        commit = self.get_latest_commit()
+        QMessageBox.information(self, "Latest Git Commit", f"Latest commit:\n{commit}")
+
+&lt;/Source&gt;
+&lt;Source path="gui/widgets.py"&gt;
+from PyQt6.QtWidgets import QTextEdit, QPushButton, QLabel, QProgressBar, QListWidgetItem, QWidget, QHBoxLayout
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QFont, QIcon
+from ai.xml_parser import XMLParser
+
+class PromptInput(QTextEdit):
+    pass
+
+class ConfirmButton(QPushButton):
+    def __init__(self, parent=None):
+        super().__init__('Send to AI', parent)
+        self.setStyleSheet("""
+            background-color: #008CBA;
+            color: white;
+            padding: 10px;
+            font-size: 16px;
+        """)
+        self.setMinimumHeight(50)
+        self.setFont(QFont('Arial', 12))
+
+class ResponseDisplay(QTextEdit):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setReadOnly(True)
+        self.xml_parser = XMLParser()
+
+    def update_counts(self, input_tokens, output_tokens):
+        self.setText(f"Input tokens: {input_tokens}, Output tokens: {output_tokens}")
+        self.setVisible(True)
+
+    def display_processed_response(self, response):
+        processed_content = self.xml_parser.process_response(response)
+        self.setText(processed_content)
+        self.setVisible(True)
+
+class StatusProgressBar(QProgressBar):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setRange(0, 0)  # Indeterminate progress
+        self.setTextVisible(False)
+        self.setVisible(False)
+
+class StatusLabel(QLabel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setVisible(False)
+
+    def update_status(self, status):
+        self.setText(status)
+        self.setVisible(True)
+
+class FileChangeWidget(QWidget):
+    preview_clicked = pyqtSignal(str)
+
+    def __init__(self, file_path, change_type, parent=None):
+        super().__init__(parent)
+        self.file_path = file_path
+        self.change_type = change_type
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(5, 5, 5, 5)
+
+        # Status icon
+        self.status_icon = QLabel()
+        self.set_status_icon()
+        layout.addWidget(self.status_icon)
+
+        # File path
+        self.path_label = QLabel(file_path)
+        layout.addWidget(self.path_label)
+
+        # Spacer
+        layout.addStretch()
+
+        # Preview icon
+        self.preview_button = QPushButton()
+        self.preview_button.setIcon(QIcon("gui/icons/preview.png"))
+        self.preview_button.clicked.connect(self.on_preview_clicked)
+        layout.addWidget(self.preview_button)
+
+    def set_status_icon(self):
+        icon = QIcon()
+        if self.change_type == "new":
+            icon = QIcon("gui/icons/new.png")
+        elif self.change_type == "edit":
+            icon = QIcon("gui/icons/edit.png")
+        elif self.change_type == "delete":
+            icon = QIcon("gui/icons/delete.png")
+        self.status_icon.setPixmap(icon.pixmap(24, 24))
+
+    def on_preview_clicked(self):
+        self.preview_clicked.emit(self.file_path)
+
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;After achanges are applied and a git commit is created show a button to rollback latest commit&lt;/Task&gt;
+

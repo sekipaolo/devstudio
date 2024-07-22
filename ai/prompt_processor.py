@@ -12,15 +12,19 @@ class PromptProcessor:
     def prepare_prompt(self, prompt, selected_files):
         logger.debug("Preparing prompt")
         guidelines_text = """
-            Format your answer as an XML document as this example. Remember to escape XML tags characters (< and >) characters:
+            Format your answer as an XML document as this example:
            <response>
                <text>Any text not related to file changes</text>
                <file-changes>
                    <file path="gui/widgets.py" action="replace">
-                        Here the full runnable content of the file
+                        <![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]>
                    </file>
                    <file path="gui/new_file.py" action="create">
-                        Here the full content of the newly created file
+                        <![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]>
                    </file>
                    <file path="gui/deleted_file.py" action="delete"/>
                    <explanation>
