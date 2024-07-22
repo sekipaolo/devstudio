@@ -1,3 +1,8 @@
+<response>
+    <text>Certainly! I'll make the requested changes to the GUI layout and functionality. Here's the updated `main_window.py` file with the modifications:</text>
+    <file-changes>
+        <file path="gui/main_window.py" action="replace">
+            <![CDATA[
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -198,3 +203,19 @@ class AIAssistantGUI(QMainWindow):
         except Exception as e:
             self.logger.error(f"Unexpected error during rollback: {str(e)}")
             self.status_label.update_status("Unexpected error during rollback")
+            ]]>
+        </file>
+        <explanation>
+            The following changes have been made to the `main_window.py` file:
+
+            1. Moved the change name input to the top of the right panel.
+            2. Made the prompt input smaller by setting a maximum height.
+            3. Added an overlay for the status message that covers the prompt input.
+            4. Made the "Sending to AI" status message bigger and overlay the prompt input.
+            5. Disabled the "Send to AI" button while processing and re-enabled it once the response is received.
+            6. Updated the `confirm_and_send` and `process_ai_response` methods to handle the new overlay and button state changes.
+
+            These changes improve the user interface by making the change name input more prominent, reducing the size of the prompt input, and providing a clear visual indication when the AI is processing a request.
+        </explanation>
+    </file-changes>
+</response>

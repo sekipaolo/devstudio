@@ -1,7 +1,28 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/main_window.py"&gt;
 import logging
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QFont
 from .file_tree import FileTreeView
 from .widgets import PromptInput, ConfirmButton, ResponseDisplay, StatusProgressBar, StatusLabel
 from .file_changes import FileChangesList
@@ -51,16 +72,15 @@ class AIAssistantGUI(QMainWindow):
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
 
+        self.prompt_input = PromptInput()
+        right_layout.addWidget(QLabel('Enter your prompt:'))
+        right_layout.addWidget(self.prompt_input)
+
         change_name_layout = QHBoxLayout()
         change_name_layout.addWidget(QLabel('Change name:'))
         self.change_name_input = QLineEdit()
         change_name_layout.addWidget(self.change_name_input)
         right_layout.addLayout(change_name_layout)
-
-        right_layout.addWidget(QLabel('Enter your prompt:'))
-        self.prompt_input = PromptInput()
-        self.prompt_input.setMaximumHeight(100)  # Make the prompt input smaller
-        right_layout.addWidget(self.prompt_input)
 
         button_layout = QHBoxLayout()
         self.confirm_button = ConfirmButton()
@@ -94,16 +114,6 @@ class AIAssistantGUI(QMainWindow):
         right_layout.addWidget(QLabel('File Changes:'))
         right_layout.addWidget(self.file_changes_list)
 
-        # Create an overlay for the status message
-        self.status_overlay = QFrame(self.prompt_input)
-        self.status_overlay.setStyleSheet("background-color: rgba(0, 0, 0, 0.7);")
-        self.status_overlay.setVisible(False)
-        overlay_layout = QVBoxLayout(self.status_overlay)
-        self.overlay_label = QLabel("Sending request to AI...")
-        self.overlay_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.overlay_label.setStyleSheet("color: white; font-size: 18px; font-weight: bold;")
-        overlay_layout.addWidget(self.overlay_label)
-
         return right_panel
 
     def populate_file_tree(self):
@@ -123,23 +133,20 @@ class AIAssistantGUI(QMainWindow):
         self.change_name_input.clear()
 
         self.status_progress_bar.setVisible(True)
-        self.status_overlay.setVisible(True)
-        self.confirm_button.setEnabled(False)
+        self.status_label.update_status("Sending request to AI...")
         
         QTimer.singleShot(100, lambda: self.process_ai_response(prompt, selected_files))
 
     def process_ai_response(self, prompt, selected_files):
         try:
             response, processor = self.logic.process_prompt(prompt, selected_files)            
-            self.overlay_label.setText("Processing AI response...")
+            self.status_label.update_status("Processing AI response...")
             self.response_display.display_processed_response("\n".join(processor.response["text"]))
             self.response_display.setVisible(True)
             
             self.file_changes_list.show_file_changes(processor)
 
             self.status_progress_bar.setVisible(False)
-            self.status_overlay.setVisible(False)
-            self.confirm_button.setEnabled(True)
             self.status_label.update_status("AI response processed successfully!")
             
             self.apply_changes_button.setVisible(True)
@@ -148,8 +155,6 @@ class AIAssistantGUI(QMainWindow):
         except Exception as e:
             self.logger.error(f"Error processing AI response: {str(e)}")
             self.status_progress_bar.setVisible(False)
-            self.status_overlay.setVisible(False)
-            self.confirm_button.setEnabled(True)
             self.status_label.update_status("Error processing AI response")
 
     def apply_file_changes(self):
@@ -198,3 +203,7 @@ class AIAssistantGUI(QMainWindow):
         except Exception as e:
             self.logger.error(f"Unexpected error during rollback: {str(e)}")
             self.status_label.update_status("Unexpected error during rollback")
+
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;Put the change name input on top. Make the prompt input smaller. The sending to AI status message should be bigger and overlay the prompt input and make the send to ai button disabled (ennable once the response is received&lt;/Task&gt;
+
