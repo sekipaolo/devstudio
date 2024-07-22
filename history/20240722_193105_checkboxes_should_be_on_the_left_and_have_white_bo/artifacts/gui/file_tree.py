@@ -52,23 +52,9 @@ class FileTreeView(QTreeView):
             else:
                 item.setData(False, Qt.ItemDataRole.UserRole + 1)
 
-    def mousePressEvent(self, event):
-        index = self.indexAt(event.pos())
-        if index.isValid():
-            rect = self.visualRect(index)
-            checkbox_rect = self.style().subElementRect(QStyle.SubElement.SE_ItemViewItemCheckIndicator, 
-                                                        QStyleOptionViewItem(), self)
-            checkbox_rect.moveTopLeft(rect.topLeft())
-            if checkbox_rect.contains(event.pos()):
-                item = self.model.itemFromIndex(index)
-                item.setCheckState(Qt.CheckState.Checked if item.checkState() == Qt.CheckState.Unchecked else Qt.CheckState.Unchecked)
-                event.accept()
-                return
-        super().mousePressEvent(event)
-
     def on_item_clicked(self, index):
-        # This method is now only for selection, not for checkbox toggling
-        pass
+        item = self.model.itemFromIndex(index)
+        item.setCheckState(Qt.CheckState.Checked if item.checkState() == Qt.CheckState.Unchecked else Qt.CheckState.Unchecked)
 
     def on_item_double_clicked(self, index):
         item = self.model.itemFromIndex(index)

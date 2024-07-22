@@ -1,3 +1,25 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/file_tree.py"&gt;
 import os
 from PyQt6.QtWidgets import QTreeView, QStyle, QProxyStyle, QStyleOptionViewItem
 from PyQt6.QtGui import QStandardItemModel, QStandardItem, QPalette, QPainter, QPen
@@ -52,23 +74,9 @@ class FileTreeView(QTreeView):
             else:
                 item.setData(False, Qt.ItemDataRole.UserRole + 1)
 
-    def mousePressEvent(self, event):
-        index = self.indexAt(event.pos())
-        if index.isValid():
-            rect = self.visualRect(index)
-            checkbox_rect = self.style().subElementRect(QStyle.SubElement.SE_ItemViewItemCheckIndicator, 
-                                                        QStyleOptionViewItem(), self)
-            checkbox_rect.moveTopLeft(rect.topLeft())
-            if checkbox_rect.contains(event.pos()):
-                item = self.model.itemFromIndex(index)
-                item.setCheckState(Qt.CheckState.Checked if item.checkState() == Qt.CheckState.Unchecked else Qt.CheckState.Unchecked)
-                event.accept()
-                return
-        super().mousePressEvent(event)
-
     def on_item_clicked(self, index):
-        # This method is now only for selection, not for checkbox toggling
-        pass
+        item = self.model.itemFromIndex(index)
+        item.setCheckState(Qt.CheckState.Checked if item.checkState() == Qt.CheckState.Unchecked else Qt.CheckState.Unchecked)
 
     def on_item_double_clicked(self, index):
         item = self.model.itemFromIndex(index)
@@ -76,7 +84,7 @@ class FileTreeView(QTreeView):
             # Implement rename functionality here
             pass
 
-    def get_selected_files(self) -> List[Dict[str, str]]:
+    def get_selected_files(self) -&gt; List[Dict[str, str]]:
         selected_files = []
         def traverse(parent: QStandardItem):
             for row in range(parent.rowCount()):
@@ -96,9 +104,13 @@ class FileTreeView(QTreeView):
         traverse(root)
         return selected_files
 
-    def get_file_path(self, item: QStandardItem) -> str:
+    def get_file_path(self, item: QStandardItem) -&gt; str:
         path = []
         while item is not None:
             path.append(item.text())
             item = item.parent()
         return os.path.join(*reversed(path[:-1]))  # Exclude the invisible root item
+
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;on the filetree I can click on the file name to check/uncheck the checkbox. I would like to be able to click the checkbox instead&lt;/Task&gt;
+

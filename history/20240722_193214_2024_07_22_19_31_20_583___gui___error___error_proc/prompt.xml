@@ -1,3 +1,25 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/main_window.py"&gt;
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox
 from PyQt6.QtCore import Qt, QTimer
@@ -8,7 +30,6 @@ from .ai_assistant_logic import AIAssistantLogic
 from .logging_setup import setup_logging, LoggingToggle
 from .project_root import ProjectRootManager
 from config.global_config import config
-from .file_preview_popup import FilePreviewPopup
 
 class AIAssistantGUI(QMainWindow):
     def __init__(self):
@@ -129,6 +150,7 @@ class AIAssistantGUI(QMainWindow):
         except Exception as e:
             self.logger.error(f"Error applying file changes: {str(e)}")
 
-    def show_file_preview(self, file_path, content):
-        preview = FilePreviewPopup(file_path, content)
-        preview.exec()
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;2024-07-22 19:31:20,583 - GUI - ERROR - Error processing AI response: 'AIAssistantGUI' object has no attribute 'show_file_preview'
+&lt;/Task&gt;
+

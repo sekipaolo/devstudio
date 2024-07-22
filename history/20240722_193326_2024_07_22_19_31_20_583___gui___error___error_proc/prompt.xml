@@ -1,3 +1,76 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/file_preview_popup.py"&gt;
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QLabel
+from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor
+import re
+
+class PythonSyntaxHighlighter(QSyntaxHighlighter):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.highlighting_rules = []
+
+        keyword_format = QTextCharFormat()
+        keyword_format.setForeground(QColor("#569CD6"))
+        keywords = ["\\bclass\\b", "\\bdef\\b", "\\bif\\b", "\\belse\\b", "\\bfor\\b", "\\bwhile\\b", "\\breturn\\b"]
+        for word in keywords:
+            self.highlighting_rules.append((re.compile(word), keyword_format))
+
+        string_format = QTextCharFormat()
+        string_format.setForeground(QColor("#CE9178"))
+        self.highlighting_rules.append((re.compile("\".*\""), string_format))
+        self.highlighting_rules.append((re.compile("'.*'"), string_format))
+
+        comment_format = QTextCharFormat()
+        comment_format.setForeground(QColor("#6A9955"))
+        self.highlighting_rules.append((re.compile("#.*"), comment_format))
+
+    def highlightBlock(self, text):
+        for pattern, format in self.highlighting_rules:
+            for match in pattern.finditer(text):
+                self.setFormat(match.start(), match.end() - match.start(), format)
+
+class FilePreviewPopup(QDialog):
+    def __init__(self, file_path, content):
+        super().__init__()
+        self.setWindowTitle(f"File Preview: {file_path}")
+        self.setGeometry(200, 200, 600, 400)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        layout.addWidget(QLabel(f"File: {file_path}"))
+
+        self.text_edit = QTextEdit()
+        self.text_edit.setReadOnly(True)
+        self.text_edit.setPlainText(content)
+        layout.addWidget(self.text_edit)
+
+        # Apply syntax highlighting for Python files
+        if file_path.endswith('.py'):
+            self.highlighter = PythonSyntaxHighlighter(self.text_edit.document())
+
+&lt;/Source&gt;
+&lt;Source path="gui/main_window.py"&gt;
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox
 from PyQt6.QtCore import Qt, QTimer
@@ -8,7 +81,6 @@ from .ai_assistant_logic import AIAssistantLogic
 from .logging_setup import setup_logging, LoggingToggle
 from .project_root import ProjectRootManager
 from config.global_config import config
-from .file_preview_popup import FilePreviewPopup
 
 class AIAssistantGUI(QMainWindow):
     def __init__(self):
@@ -129,6 +201,44 @@ class AIAssistantGUI(QMainWindow):
         except Exception as e:
             self.logger.error(f"Error applying file changes: {str(e)}")
 
-    def show_file_preview(self, file_path, content):
-        preview = FilePreviewPopup(file_path, content)
-        preview.exec()
+&lt;/Source&gt;
+&lt;Source path="gui/widgets.py"&gt;
+from PyQt6.QtWidgets import QTextEdit, QPushButton, QProgressBar, QLabel
+
+class PromptInput(QTextEdit):
+    pass
+
+class ConfirmButton(QPushButton):
+    def __init__(self):
+        super().__init__("Confirm")
+        self.setStyleSheet("""
+            QPushButton {
+                background-color: #2C3E50;
+                color: white;
+                border: none;
+                padding: 5px 15px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #34495E;
+            }
+            QPushButton:pressed {
+                background-color: #1ABC9C;
+            }
+        """)
+
+class ResponseDisplay(QTextEdit):
+    def display_processed_response(self, text):
+        self.setPlainText(text)
+
+class StatusProgressBar(QProgressBar):
+    pass
+
+class StatusLabel(QLabel):
+    def update_status(self, text):
+        self.setText(text)
+
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;2024-07-22 19:31:20,583 - GUI - ERROR - Error processing AI response: 'AIAssistantGUI' object has no attribute 'show_file_preview'
+&lt;/Task&gt;
+

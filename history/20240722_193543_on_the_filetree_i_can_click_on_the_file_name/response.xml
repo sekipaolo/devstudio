@@ -1,3 +1,8 @@
+<response>
+    <text>Certainly! I'll modify the FileTreeView class to allow checking/unchecking the checkbox by clicking directly on it, while preserving the ability to select items by clicking on the file name. Here's the updated version of the file:</text>
+    <file-changes>
+        <file path="gui/file_tree.py" action="replace">
+            <![CDATA[
 import os
 from PyQt6.QtWidgets import QTreeView, QStyle, QProxyStyle, QStyleOptionViewItem
 from PyQt6.QtGui import QStandardItemModel, QStandardItem, QPalette, QPainter, QPen
@@ -102,3 +107,18 @@ class FileTreeView(QTreeView):
             path.append(item.text())
             item = item.parent()
         return os.path.join(*reversed(path[:-1]))  # Exclude the invisible root item
+            ]]>
+        </file>
+        <explanation>
+            The main changes made to the FileTreeView class are:
+
+            1. Removed the checkbox toggling functionality from the `on_item_clicked` method.
+            2. Added a new `mousePressEvent` method to handle mouse clicks on the tree view.
+            3. In the `mousePressEvent` method, we check if the click occurred on the checkbox area:
+               - If it did, we toggle the checkbox state.
+               - If it didn't, we call the superclass method to handle regular item selection.
+
+            These changes allow users to click directly on the checkbox to toggle its state, while still being able to select items by clicking on the file name. The double-click functionality for renaming (which is not yet implemented) remains unchanged.
+        </explanation>
+    </file-changes>
+</response>

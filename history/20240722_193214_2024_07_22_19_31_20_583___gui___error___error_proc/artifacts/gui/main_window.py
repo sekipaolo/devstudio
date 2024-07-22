@@ -8,7 +8,6 @@ from .ai_assistant_logic import AIAssistantLogic
 from .logging_setup import setup_logging, LoggingToggle
 from .project_root import ProjectRootManager
 from config.global_config import config
-from .file_preview_popup import FilePreviewPopup
 
 class AIAssistantGUI(QMainWindow):
     def __init__(self):
@@ -128,7 +127,3 @@ class AIAssistantGUI(QMainWindow):
             self.project_root_manager.show_latest_commit()
         except Exception as e:
             self.logger.error(f"Error applying file changes: {str(e)}")
-
-    def show_file_preview(self, file_path, content):
-        preview = FilePreviewPopup(file_path, content)
-        preview.exec()

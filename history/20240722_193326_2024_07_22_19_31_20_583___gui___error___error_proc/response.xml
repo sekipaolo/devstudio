@@ -1,3 +1,8 @@
+<response>
+    <text>It seems there's an error in the AIAssistantGUI class where it's trying to call a method `show_file_preview` that doesn't exist. To fix this issue, we need to add the `show_file_preview` method to the AIAssistantGUI class in the main_window.py file. We'll also need to import the FilePreviewPopup class from file_preview_popup.py to use it in the new method.</text>
+    <file-changes>
+        <file path="gui/main_window.py" action="replace">
+            <![CDATA[
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox
 from PyQt6.QtCore import Qt, QTimer
@@ -132,3 +137,24 @@ class AIAssistantGUI(QMainWindow):
     def show_file_preview(self, file_path, content):
         preview = FilePreviewPopup(file_path, content)
         preview.exec()
+            ]]>
+        </file>
+        <explanation>
+            I've made the following changes to the gui/main_window.py file:
+
+            1. Added an import for the FilePreviewPopup class:
+               `from .file_preview_popup import FilePreviewPopup`
+
+            2. Added a new method `show_file_preview` to the AIAssistantGUI class:
+               ```python
+               def show_file_preview(self, file_path, content):
+                   preview = FilePreviewPopup(file_path, content)
+                   preview.exec()
+               ```
+               
+            This new method creates a FilePreviewPopup instance with the given file path and content, then shows it as a modal dialog.
+
+            These changes should resolve the error by providing the missing `show_file_preview` method. Now, when this method is called (likely from the FileChangesList), it will create and show a preview popup for the selected file.
+        </explanation>
+    </file-changes>
+</response>
