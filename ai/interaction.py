@@ -21,8 +21,11 @@ class AIInteraction:
     def process_prompt(self, prompt, selected_files):
         logger.debug("Processing prompt")
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        summary = self._generate_summary(prompt)
-        config.set("history_dir", os.path.join(config.get("project_root"), 'history', f"{timestamp}_{summary}"))
+        if(not config.get("change_name")):
+            config.set("change_name", self._generate_summary(prompt))
+        config.set("history_dir", os.path.join(
+            config.get("project_root"), 
+            'history', timestamp + "_" + config.get("change_name")))
         config.set("artifacts_dir", os.path.join(config.get("history_dir"), 'artifacts'))
         os.makedirs(config.get("history_dir"), exist_ok=True)
         os.makedirs(config.get("artifacts_dir"), exist_ok=True)

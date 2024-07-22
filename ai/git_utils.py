@@ -17,7 +17,7 @@ def create_git_commit():
         subprocess.run(["git", "add", config.get("history_dir")], check=True)
 
         # Extract the summary from the history directory name
-        summary = os.path.basename(config.get("history_dir")).split('_', 1)[1]
+        summary = os.path.basename(config.get("change_name"))
 
         # Create a commit with a descriptive message including the summary
         commit_message = f"AI-assisted changes: {summary} - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"

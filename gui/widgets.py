@@ -5,7 +5,7 @@ class PromptInput(QTextEdit):
 
 class ConfirmButton(QPushButton):
     def __init__(self):
-        super().__init__("Confirm")
+        super().__init__("Send to AI")
         self.setStyleSheet("""
             QPushButton {
                 background-color: #2C3E50;

@@ -1,3 +1,8 @@
+<response>
+  <text>To implement the rollback functionality with a popup for uncommitted changes, we need to modify the `AIAssistantGUI` class in the `main_window.py` file. We'll add a new button for rolling back and implement the necessary logic.</text>
+  <file-changes>
+    <file path="gui/main_window.py" action="replace">
+      <![CDATA[
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox
 from PyQt6.QtCore import Qt, QTimer
@@ -181,3 +186,23 @@ class AIAssistantGUI(QMainWindow):
         except Exception as e:
             self.logger.error(f"Unexpected error during rollback: {str(e)}")
             self.status_label.update_status("Unexpected error during rollback")
+      ]]>
+    </file>
+    <explanation>
+      The following changes were made to the `main_window.py` file:
+
+      1. Added a new import for `QMessageBox` from PyQt6.QtWidgets.
+      2. Added a new import for `subprocess` to run git commands.
+      3. Created a new `rollback_button` in the `create_right_panel` method.
+      4. Modified the `apply_file_changes` method to show the `rollback_button` after changes are applied.
+      5. Implemented a new `rollback_to_last_commit` method that:
+         - Checks for uncommitted changes using `git status`.
+         - If there are uncommitted changes, shows a popup asking the user if they want to discard them.
+         - If the user confirms or there are no uncommitted changes, performs a hard reset to the last commit.
+         - Updates the file tree and GUI state after the rollback.
+         - Handles potential errors and updates the status label accordingly.
+
+      These changes implement the requested rollback functionality with a popup for uncommitted changes, allowing users to revert to the last commit after applying AI-suggested changes.
+    </explanation>
+  </file-changes>
+</response>
