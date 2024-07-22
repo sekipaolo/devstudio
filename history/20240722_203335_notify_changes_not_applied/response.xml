@@ -1,3 +1,8 @@
+<response>
+  <text>Certainly! I'll modify the `AIAssistantGUI` class to show a warning when closing the app or clicking "Send to AI" if there are unapplied changes. Here's how we'll implement this:</text>
+  <file-changes>
+    <file path="gui/main_window.py" action="replace">
+      <![CDATA[
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -225,3 +230,22 @@ class AIAssistantGUI(QMainWindow):
                 event.ignore()
         else:
             event.accept()
+      ]]>
+    </file>
+    <explanation>
+      I've made the following changes to the AIAssistantGUI class:
+
+      1. Added a new instance variable `self.has_unapplied_changes` to keep track of whether there are unapplied changes.
+      
+      2. Modified the `confirm_and_send` method to check for unapplied changes before proceeding. If there are unapplied changes, it shows a warning message asking the user if they want to proceed and discard the changes.
+      
+      3. Updated the `process_ai_response` method to set `self.has_unapplied_changes = True` when new changes are received from the AI.
+      
+      4. Modified the `apply_file_changes` method to set `self.has_unapplied_changes = False` after successfully applying the changes.
+      
+      5. Added a new `closeEvent` method to handle the window closing event. This method checks for unapplied changes and shows a warning message if there are any, asking the user if they want to exit without applying the changes.
+
+      These modifications ensure that the user is warned about unapplied changes when trying to send a new request to the AI or when closing the application.
+    </explanation>
+  </file-changes>
+</response>

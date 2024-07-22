@@ -1,3 +1,25 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/main_window.py"&gt;
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -18,7 +40,6 @@ class AIAssistantGUI(QMainWindow):
         config.set("project_root", "/home/sekipaolo/apps/agi/devstudio")
         self.logic = AIAssistantLogic()
         self.logger = setup_logging()
-        self.has_unapplied_changes = False
         self.initUI()
 
     def initUI(self):
@@ -117,14 +138,6 @@ class AIAssistantGUI(QMainWindow):
         self.file_tree.populate(config.get("project_root"))
 
     def confirm_and_send(self):
-        if self.has_unapplied_changes:
-            reply = QMessageBox.question(self, 'Unapplied Changes',
-                                         "There are unapplied changes. Do you want to proceed and discard them?",
-                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                         QMessageBox.StandardButton.No)
-            if reply == QMessageBox.StandardButton.No:
-                return
-
         prompt = self.prompt_input.toPlainText()
         selected_files = self.file_tree.get_selected_files()
         
@@ -157,7 +170,6 @@ class AIAssistantGUI(QMainWindow):
             self.status_label.update_status("AI response processed successfully!")
             
             self.apply_changes_button.setVisible(True)
-            self.has_unapplied_changes = True
             
             QTimer.singleShot(3000, lambda: self.status_label.setVisible(False))
         except Exception as e:
@@ -173,7 +185,6 @@ class AIAssistantGUI(QMainWindow):
             self.populate_file_tree()
             self.file_changes_list.clear()
             self.apply_changes_button.setVisible(False)
-            self.has_unapplied_changes = False
             self.project_root_manager.show_latest_commit()
         except Exception as e:
             self.logger.error(f"Error applying file changes: {str(e)}")
@@ -213,15 +224,8 @@ class AIAssistantGUI(QMainWindow):
             self.logger.error(f"Unexpected error during rollback: {str(e)}")
             self.status_label.update_status("Unexpected error during rollback")
 
-    def closeEvent(self, event):
-        if self.has_unapplied_changes:
-            reply = QMessageBox.question(self, 'Unapplied Changes',
-                                         "There are unapplied changes. Are you sure you want to exit?",
-                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                         QMessageBox.StandardButton.No)
-            if reply == QMessageBox.StandardButton.Yes:
-                event.accept()
-            else:
-                event.ignore()
-        else:
-            event.accept()
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;When clickking on send to ai or closing the app show a warning if there are changes not applied
+
+&lt;/Task&gt;
+
