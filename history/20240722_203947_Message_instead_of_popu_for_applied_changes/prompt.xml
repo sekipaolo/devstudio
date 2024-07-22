@@ -1,3 +1,25 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/main_window.py"&gt;
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -178,17 +200,9 @@ class AIAssistantGUI(QMainWindow):
             self.file_changes_list.clear()
             self.apply_changes_button.setVisible(False)
             self.has_unapplied_changes = False
-            
-            # Get the latest commit message
-            result = subprocess.run(["git", "log", "-1", "--pretty=%B"], cwd=config.get("project_root"), capture_output=True, text=True)
-            latest_commit_message = result.stdout.strip()
-            
-            # Display the info message in the GUI
-            self.status_label.update_status(f"Changes applied successfully. Latest commit: {latest_commit_message}")
-            QTimer.singleShot(5000, lambda: self.status_label.setVisible(False))
+            self.project_root_manager.show_latest_commit()
         except Exception as e:
             self.logger.error(f"Error applying file changes: {str(e)}")
-            self.status_label.update_status("Error applying file changes")
 
     def show_file_preview(self, file_path, content):
         preview = FilePreviewPopup(file_path, content)
@@ -237,3 +251,7 @@ class AIAssistantGUI(QMainWindow):
                 event.ignore()
         else:
             event.accept()
+
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;When changes are applied a popup shows up with the latest commit. Show an info message int ht e gui instead&lt;/Task&gt;
+
