@@ -1,3 +1,25 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/main_window.py"&gt;
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -129,12 +151,8 @@ class AIAssistantGUI(QMainWindow):
         selected_files = self.file_tree.get_selected_files()
         
         if not selected_files:
-            reply = QMessageBox.question(self, 'No Files Selected',
-                                         "No files are selected. Do you want to proceed without file context?",
-                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                         QMessageBox.StandardButton.No)
-            if reply == QMessageBox.StandardButton.No:
-                return
+            self.logger.error("No files selected. Please select files before sending.")
+            return
 
         change_name = self.change_name_input.text()
         config.set("change_name", change_name.replace(" ", "_" ))
@@ -229,3 +247,7 @@ class AIAssistantGUI(QMainWindow):
                 event.ignore()
         else:
             event.accept()
+
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;When we send a request to IA without uploaded files show a warning popup  letting the user chose if to proceed or not&lt;/Task&gt;
+

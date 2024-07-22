@@ -1,3 +1,8 @@
+<response>
+    <text>Certainly! I'll modify the `confirm_and_send` method in the `AIAssistantGUI` class to show a warning popup when no files are selected before sending a request to the AI. The user will be able to choose whether to proceed or not.</text>
+    <file-changes>
+        <file path="gui/main_window.py" action="replace">
+            <![CDATA[
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -229,3 +234,16 @@ class AIAssistantGUI(QMainWindow):
                 event.ignore()
         else:
             event.accept()
+            ]]>
+        </file>
+        <explanation>
+            I've modified the `confirm_and_send` method in the `AIAssistantGUI` class to include a warning popup when no files are selected. Here are the changes:
+
+            1. After checking for selected files, if none are selected, a QMessageBox is shown asking the user if they want to proceed without file context.
+            2. If the user chooses not to proceed (clicks "No"), the method returns early, preventing the AI request from being sent.
+            3. If the user chooses to proceed (clicks "Yes"), the method continues as before, sending the request to the AI without any selected files.
+
+            This change allows users to make an informed decision about proceeding with an AI request when no files are selected, while still giving them the option to continue if they wish to do so.
+        </explanation>
+    </file-changes>
+</response>
