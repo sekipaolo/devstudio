@@ -1,3 +1,25 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/file_preview_popup.py"&gt;
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QLabel
 from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont
 from PyQt6.QtCore import Qt
@@ -63,6 +85,7 @@ class FilePreviewPopup(QDialog):
         diff = list(differ.compare(old_lines, new_lines))
         return '\n'.join(diff)
 
-def show_file_preview(file_path, old_content, new_content):
-    preview = FilePreviewPopup(file_path, old_content, new_content)
-    preview.exec()
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;TypeError: AIAssistantGUI.show_file_preview() missing 1 required positional argument: 'new_content'
+&lt;/Task&gt;
+
