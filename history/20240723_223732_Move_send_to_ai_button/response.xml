@@ -1,3 +1,8 @@
+<response>
+    <text>Certainly! I'll modify the layout to move the "Send to AI" button (which is the confirm button) below the prompt input box. This change will improve the layout and make the flow more intuitive for users.</text>
+    <file-changes>
+        <file path="gui/main_window.py" action="replace">
+            <![CDATA[
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -232,3 +237,16 @@ class AIAssistantGUI(QMainWindow):
                 event.ignore()
         else:
             event.accept()
+            ]]>
+        </file>
+        <explanation>
+            In this modification, I've made the following changes to the `create_right_panel` method:
+
+            1. Removed the `button_layout` that previously contained both the confirm button and apply changes button.
+            2. Moved the `self.confirm_button` (which is the "Send to AI" button) directly below the prompt input box.
+            3. Placed the `self.apply_changes_button` below the confirm button.
+
+            These changes ensure that the "Send to AI" button is now positioned immediately below the prompt input box, improving the layout and user flow of the application.
+        </explanation>
+    </file-changes>
+</response>

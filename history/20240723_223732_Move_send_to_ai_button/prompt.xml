@@ -1,3 +1,25 @@
+&lt;Guidelines&gt;
+            Format your answer as an XML document as this example:
+           &lt;response&gt;
+               &lt;text&gt;Any text not related to file changes&lt;/text&gt;
+               &lt;file-changes&gt;
+                   &lt;file path="gui/widgets.py" action="replace"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/new_file.py" action="create"&gt;
+                        &lt;![CDATA[
+                        Here the full runnable content of the file preserving indentation and formatting
+                        ]]&gt;
+                   &lt;/file&gt;
+                   &lt;file path="gui/deleted_file.py" action="delete"/&gt;
+                   &lt;explanation&gt;
+                        Here the explanation of the changes
+                   &lt;/explanation&gt;                    
+               &lt;/file-changes&gt;
+           &lt;/response&gt;
+        &lt;/Guidelines&gt;&lt;Sources&gt;&lt;Source path="gui/main_window.py"&gt;
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel, QPushButton, QListWidget, QCheckBox, QLineEdit, QMessageBox, QFrame
 from PyQt6.QtCore import Qt, QTimer
@@ -78,14 +100,17 @@ class AIAssistantGUI(QMainWindow):
         self.prompt_input.setMaximumHeight(100)  # Make the prompt input smaller
         right_layout.addWidget(self.prompt_input)
 
+        button_layout = QHBoxLayout()
         self.confirm_button = ConfirmButton()
         self.confirm_button.clicked.connect(self.confirm_and_send)
-        right_layout.addWidget(self.confirm_button)
+        button_layout.addWidget(self.confirm_button)
 
         self.apply_changes_button = QPushButton("Apply Changes")
         self.apply_changes_button.clicked.connect(self.apply_file_changes)
         self.apply_changes_button.setVisible(False)
-        right_layout.addWidget(self.apply_changes_button)
+        button_layout.addWidget(self.apply_changes_button)
+
+        right_layout.addLayout(button_layout)
 
         self.status_progress_bar = StatusProgressBar()
         right_layout.addWidget(self.status_progress_bar)
@@ -232,3 +257,7 @@ class AIAssistantGUI(QMainWindow):
                 event.ignore()
         else:
             event.accept()
+
+&lt;/Source&gt;
+&lt;/Sources&gt;&lt;Task&gt;Move send to ai button below the prompt input box&lt;/Task&gt;
+
